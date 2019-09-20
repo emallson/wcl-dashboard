@@ -3,7 +3,7 @@ import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
 import { queryData, QueryVizData } from './query';
-import { ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
+import { hasReportMeta, ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
 import Vega from './vega';
 import QueryBuilder from './QueryBuilder';
 import { VisualizationSpec } from 'vega-embed';
@@ -25,6 +25,8 @@ type QueryVizState = {
 }
 
 class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
+    _nextSpec: string | null = null;
+
     constructor(props: QueryVizProps) {
         super(props);
 
@@ -33,6 +35,10 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
 
     flip() {
         this.setState({ flipped: !this.state.flipped });
+    }
+
+    updateNextSpec(newValue: string) {
+        this._nextSpec = newValue;
     }
 
     render() {
@@ -46,13 +52,15 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                     <div onClick={this.flip.bind(this)}>View</div>
                     <QueryBuilder guid={state.guid} />
                     <AceEditor
-                        value={JSON.stringify(state.spec, null, 2)} 
+                        defaultValue={JSON.stringify(state.spec, null, 2)} 
+                        onChange={this.updateNextSpec.bind(this)}
                         theme="solarized_light"
                         mode="json"
                     />
                     <input type="button" value="Update" onClick={() => {
-                        const el = document.getElementById(`spec-${state.guid.toString()}`)! as HTMLTextAreaElement;
-                        setSpec(state.guid, el.value);
+                        if(this._nextSpec !== null) {
+                            setSpec(state.guid, this._nextSpec);
+                        }
                     }} />
                 </div>
             );
@@ -60,7 +68,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
             return (
                 <div className="query-viz">
                     <div onClick={this.flip.bind(this)}>Configure</div>
-                    {data ? <Vega spec={spec} /> : <span>Missing Data</span>}
+                    {data ? <Vega spec={spec} /> : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>}
                 </div>
             );
         }
@@ -72,7 +80,7 @@ const mapState = (state: AppState, { code, guid }: { code: ReportCode | null, gu
     const vizState = state.visualizations.get(guid)!;
     return {
         state: vizState,
-        data: (code && vizState.query) ? queryData(vizState.query, code, state) : undefined,
+        data: (code && hasReportMeta(state, code) && vizState.query) ? queryData(vizState.query, code, state) : undefined,
     };
 };
 

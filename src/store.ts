@@ -57,16 +57,33 @@ export interface FightMeta {
     end_time: number,
 }
 
+export interface ActorMeta {
+    id: number,
+    name: string,
+}
+
 export type ReportState = {
     code: ReportCode,
     fights: FightMeta[],
+    friendlies: ActorMeta[],
+    enemies: ActorMeta[],
     queries: Map<QueryId, Map<string, QueryVizData>>
 };
+
+export function lookupActor(report: ReportState, id: number): ActorMeta | undefined {
+    const friendly = report.friendlies.find(({id: lid}) => id === lid);
+    if(friendly) {
+        return friendly;
+    }
+    return report.enemies.find(({id: lid}) => id === lid);
+}
 
 function emptyReportState(code: ReportCode): ReportState {
     return {
         code,
         fights: [],
+        friendlies: [],
+        enemies: [],
         queries: Map()
     };
 }
@@ -387,7 +404,7 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                 },
                 pending_updates: state.pending_updates.push({ 
                     key: [action.code, 'queries', queryKey(action.query), action.fight], 
-                    data: queryFormatData(action.code, action.fight, action.query, action.body)}
+                    data: queryFormatData(action.code, action.fight, action.query, action.body, state)}
                 ),
             };
         case MERGE_UPDATES:

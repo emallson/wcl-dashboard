@@ -1,4 +1,4 @@
-import { AppState, ReportCode } from './store';
+import { AppState, ReportCode, lookupActor } from './store';
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
 
@@ -84,12 +84,30 @@ export function createQueryMeta(kind: string, table: string | null, filter: stri
     };
 }
 
-type RawData = RawTableData | {};
+
+type RawEvent = {
+    timestamp: number,
+    sourceID?: number,
+    targetID?: number,
+};
 type RawTableData = { entries: object[], totalTime: number };
-export function queryFormatData(report: ReportCode, fight: number, query: QueryMeta, data: RawData): QueryVizData {
+type RawEventData = { events: RawEvent[] };
+export function queryFormatData(report: ReportCode, fight: number, query: QueryMeta, data: object, state: AppState): QueryVizData {
     switch(query.kind.kind) {
         case QueryType.Event:
-            throw new Error("unimplemented");
+            const edata = data as RawEventData;
+            const report_data = state.reports.get(report)!;
+            return {
+                name: 'data',
+                values: edata.events.map((datum) => {
+                    return {
+                        report, fight,
+                        sourceName: datum.sourceID ? lookupActor(report_data, datum.sourceID)!.name : undefined,
+                        targetName: datum.targetID ? lookupActor(report_data, datum.targetID)!.name : undefined,
+                        ...datum,
+                    };
+                }),
+            };
         case QueryType.Table:
             const tdata = data as RawTableData;
             return {
