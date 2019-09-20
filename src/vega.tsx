@@ -20,7 +20,8 @@ export default class Vega extends React.Component<VegaProps> {
         console.log('building plot');
         if(this.plotRef.current) {
             this.promise = embed(this.plotRef.current, this.props.spec, this.props.options)
-                .then(({ view }) => view);
+                .then(({ view }) => view)
+                .catch((error) => { console.error(error); return undefined; });
         }
     }
 
