@@ -7,6 +7,12 @@ import { ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
 import Vega from './vega';
 import QueryBuilder from './QueryBuilder';
 import { VisualizationSpec } from 'vega-embed';
+import 'brace';
+import 'brace/mode/json';
+import 'brace/theme/solarized_light';
+import AceEditor from 'react-ace';
+
+import './QueryViz.scss';
 
 type QueryVizProps = { 
     state: VizState, 
@@ -39,7 +45,11 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                 <div className="query-viz">
                     <div onClick={this.flip.bind(this)}>View</div>
                     <QueryBuilder guid={state.guid} />
-                    <textarea id={`spec-${state.guid.toString()}`} rows={40} cols={40} defaultValue={JSON.stringify(state.spec, null, 2)} />
+                    <AceEditor
+                        value={JSON.stringify(state.spec, null, 2)} 
+                        theme="solarized_light"
+                        mode="json"
+                    />
                     <input type="button" value="Update" onClick={() => {
                         const el = document.getElementById(`spec-${state.guid.toString()}`)! as HTMLTextAreaElement;
                         setSpec(state.guid, el.value);
