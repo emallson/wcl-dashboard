@@ -4,14 +4,16 @@ import { createLogger } from 'redux-logger';
 import { persistStore, persistReducer} from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import immutableTransform from 'redux-persist-transform-immutable';
+import compressTransform from 'redux-persist-transform-compress';
 
 
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
-import { Guid } from 'guid-typescript';
-import { Map, Set, List } from 'immutable';
+import { Guid as GuidCreator } from 'guid-typescript';
+import { Map, Set, List, Seq } from 'immutable';
 
-import { load_fights } from './request';
+import { load_meta, load_query_data } from './request';
+import { QueryVizData, QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing } from './query';
 
 export interface ApiKey extends Newtype<{readonly ApiKey: unique symbol}, string> {}
 
@@ -20,46 +22,73 @@ export const ApiKey = prism<ApiKey>((_s: string) => true)
 export interface ReportCode extends Newtype<{readonly ReportCode: unique symbol}, string> {}
 export const ReportCode = prism<ReportCode>((_s: string) => true)
 
-type QueryData = {
-    query: string | null,
-    bossid: string | null,
-}
+export interface Guid extends Newtype<{readonly Guid: unique symbol}, string> {}
+export const Guid = prism<Guid>(GuidCreator.isGuid);
 
 export type VizState = {
     guid: Guid,
     spec: object,
-    query: QueryData,
+    query: QueryMeta | null,
 }
+
+export type PendingUpdate = {
+    key: [ReportCode, string, QueryId, number],
+    data: QueryVizData,
+};
 
 export type AppState = {
     api_key: ApiKey | null,
     main_report: ReportCode | null,
     reports: Map<ReportCode, ReportState>,
     requests: {
-        fights: Set<ReportCode>,
-        actors: Set<ReportCode>,
+        meta: Set<ReportCode>,
+        queries: Set<[QueryId, ReportCode, number]>,
     },
     errors: List<any>,
     visualizations: Map<Guid, VizState>,
+    pending_updates: List<PendingUpdate>,
 };
+
+export interface FightMeta {
+    id: number,
+    boss: number,
+    name: string,
+    start_time: number,
+    end_time: number,
+}
 
 export type ReportState = {
     code: ReportCode,
-    fights: object[],
-    actors: object[],
+    fights: FightMeta[],
+    queries: Map<QueryId, Map<string, QueryVizData>>
 };
+
+function emptyReportState(code: ReportCode): ReportState {
+    return {
+        code,
+        fights: [],
+        queries: Map()
+    };
+}
 
 const initialState: AppState = {
     api_key: null,
     main_report: null,
     reports: Map(),
     requests: {
-        fights: Set(),
-        actors: Set(),
+        meta: Set(),
+        queries: Set(),
     },
     errors: List(),
     visualizations: Map(),
+    pending_updates: List(),
 };
+
+export function bossList(reports: Seq.Indexed<ReportState>): Map<number, string> {
+    return reports.reduce((bosses, report: ReportState) => {
+        return report.fights.filter(({ boss }) => boss > 0).reduce((bosses: Map<number, string>, fight: FightMeta) => bosses.set(fight.boss, fight.name), bosses);
+    }, Map());
+}
 
 export const SET_API_KEY = Symbol("SET_API_KEY");
 interface SetApiKeyAction {
@@ -101,59 +130,126 @@ export function setMainReport(code: string | ReportCode) {
     }
 }
 
-export function updateReport(code: ReportCode) {
-    return requestFights(code);
+export function hasReportMeta(state: AppState, code: ReportCode): boolean {
+    return state.reports.has(code);
 }
 
-export const REQUEST_REPORT_FIGHTS = Symbol("REQUEST_REPORT_FIGHTS");
-interface RequestReportFightsAction {
-    type: typeof REQUEST_REPORT_FIGHTS
+export function updateReport(code: ReportCode) {
+    return requestMeta(code);
+}
+
+export const REQUEST_REPORT_META = Symbol("REQUEST_REPORT_META");
+interface RequestReportMetaAction {
+    type: typeof REQUEST_REPORT_META
     code: ReportCode
 }
 
-export function requestFights(code: ReportCode): ThunkAction<void, AppState, undefined, Action> {
+export function requestMeta(code: ReportCode): ThunkAction<void, AppState, undefined, Action> {
     return function(dispatch, getStore) {
-        if (getStore().requests.fights.contains(code)) {
+        if (getStore().requests.meta.has(code)) {
             // request is already in-flight
             return;
         }
 
         dispatch({
-            type: REQUEST_REPORT_FIGHTS,
+            type: REQUEST_REPORT_META,
             code,
         });
 
-        console.info("requesting report", code);
-        load_fights(getStore().api_key!, code)
-            .then(fights => dispatch({
-                type: RETRIEVED_REPORT_FIGHTS,
-                code, fights,
+        load_meta(getStore().api_key!, code)
+            .then(body => dispatch({
+                type: RETRIEVED_REPORT_META,
+                code, body,
             }), message => dispatch({
-                type: ERROR_REPORT_FIGHTS,
+                type: ERROR_REPORT_META,
                 code,
                 message,
-            }));
+            }))
+            .then(() => dispatch(updateQueries(code)));
     };
 }
 
-export const RETRIEVED_REPORT_FIGHTS = Symbol("RETRIEVED_REPORT_FIGHTS");
-interface RetrievedReportFights {
-    type: typeof RETRIEVED_REPORT_FIGHTS,
+export const RETRIEVED_REPORT_META = Symbol("RETRIEVED_REPORT_META");
+interface RetrievedReportMeta {
+    type: typeof RETRIEVED_REPORT_META,
     code: ReportCode,
-    fights: object[],
+    body: object,
 }
 
-export const ERROR_REPORT_FIGHTS = Symbol("ERROR_REPORT_FIGHTS");
-interface ErrorReportFights {
-    type: typeof ERROR_REPORT_FIGHTS,
+export const ERROR_REPORT_META = Symbol("ERROR_REPORT_META");
+interface ErrorReportMeta {
+    type: typeof ERROR_REPORT_META,
     code: ReportCode,
     message: any,
 }
 
-export const REQUEST_REPORT_ACTORS = Symbol("REQUEST_REPORT_ACTORS");
-interface RequestReportActorsAction {
-    type: typeof REQUEST_REPORT_ACTORS
-    code: ReportCode
+export const UPDATE_QUERY = Symbol("UPDATE_QUERY");
+interface UpdateQueryAction {
+    type: typeof UPDATE_QUERY,
+    code: ReportCode,
+    query: QueryMeta,
+    fights: number[]
+}
+
+export const RETRIEVED_UPDATE_QUERY = Symbol("RETRIEVED_UPDATE_QUERY");
+interface RetrievedUpdateQueryAction {
+    type: typeof RETRIEVED_UPDATE_QUERY,
+    code: ReportCode,
+    fight: number,
+    query: QueryMeta,
+    body: object,
+}
+
+export const ERROR_UPDATE_QUERY = Symbol("ERROR_UPDATE_QUERY");
+interface ErrorUpdateQueryAction {
+    type: typeof ERROR_UPDATE_QUERY,
+    code: ReportCode,
+    fight: number,
+    query: QueryMeta,
+    body: object,
+}
+
+export const MERGE_UPDATES = Symbol("MERGE_UPDATES");
+interface MergeUpdatesAction {
+    type: typeof MERGE_UPDATES,
+}
+
+export function updateQueries(code: ReportCode): ThunkAction<void, AppState, undefined, Action> {
+    return function(dispatch, getState) {
+        const app_state = getState();
+        const queries = app_state.visualizations.filter((state) => state.query !== null && shouldUpdateQuery(state.query, code, app_state));
+
+        const report = app_state.reports.get(code)!;
+
+        queries.valueSeq().forEach(({query}) => {
+            const fights = queryFightsMissing(query!, code, app_state);
+            if (fights.length === 0) {
+                return;
+            }
+
+            dispatch({
+                type: UPDATE_QUERY,
+                code, query, fights,
+            });
+
+            Promise.all(fights.map(fight => {
+                return load_query_data(app_state.api_key!, code, report.fights.find(({ id }) => id === fight)!, query!)
+                    .then(body => dispatch({
+                        type: RETRIEVED_UPDATE_QUERY,
+                        code, fight, query, body,
+                    }),
+                        body => {
+                            console.error(body);
+                            dispatch({
+                                type: ERROR_UPDATE_QUERY,
+                                code, fight, query, body
+                            });
+                        });
+            })).then(() => dispatch({
+                type: MERGE_UPDATES,
+            }));
+        });
+    }
 }
 
 export const CREATE_VIZ = Symbol("CREATE_VIZ");
@@ -189,9 +285,25 @@ export function setVizSpec(guid: Guid, spec: string | object) {
     }
 }
 
-export type FightActions = RequestReportFightsAction | RetrievedReportFights | ErrorReportFights;
-export type RequestAction = FightActions | RequestReportActorsAction;
-export type DashboardAction = SetApiKeyAction | SetMainReportAction | RequestAction | CreateVizAction | SetVizSpecAction;
+export const SET_VIZ_QUERY = Symbol("SET_VIZ_QUERY");
+interface SetVizQueryAction {
+    type: typeof SET_VIZ_QUERY,
+    guid: Guid,
+    query: QueryMeta,
+}
+
+export function setVizQuery(guid: Guid, kind: string, table: string | null, filter: string, bossid: string | null) {
+    return {
+        type: SET_VIZ_QUERY,
+        guid: guid,
+        query: createQueryMeta(kind, table, filter, bossid),
+    };
+}
+
+export type MetaActions = RequestReportMetaAction | RetrievedReportMeta | ErrorReportMeta;
+export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction;
+export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction;
+export type DashboardAction = SetApiKeyAction | SetMainReportAction | MetaActions | VizAction | QueryAction;
 
 function rootReducer(state = initialState, action: DashboardAction): AppState {
     switch(action.type) {
@@ -206,16 +318,13 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                 main_report: action.code,
             }
         case CREATE_VIZ:
-            const guid = Guid.create();
+            const guid = toNullable(Guid.getOption(GuidCreator.create().toString()))!;
             return {
                 ...state,
                 visualizations: state.visualizations.set(guid, {
                     guid,
                     spec: {},
-                    query: {
-                        query: null,
-                        bossid: null,
-                    }
+                    query: null, 
                 })
             };
         case SET_VIZ_SPEC:
@@ -225,35 +334,67 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                     return { ...value, spec: action.spec };
                 })
             };
-        case REQUEST_REPORT_FIGHTS:
+        case SET_VIZ_QUERY:
+            return {
+                ...state,
+                visualizations: state.visualizations.updateIn([action.guid, 'query'], () => action.query),
+            };
+        case REQUEST_REPORT_META:
             return {
                 ...state,
                 requests: {
                     ...state.requests,
-                    fights: state.requests.fights.add(action.code),
+                    meta: state.requests.meta.add(action.code),
                 }
             };
-        case RETRIEVED_REPORT_FIGHTS:
+        case RETRIEVED_REPORT_META:
             return {
                 ...state,
                 requests: {
                     ...state.requests,
-                    fights: state.requests.fights.remove(action.code),
+                    meta: state.requests.meta.remove(action.code),
                 },
                 reports: state.reports.update(
                     action.code, 
-                    { code: action.code, fights: action.fights, actors: [] },
-                    report => { return {...report, fights: action.fights}; }
+                    emptyReportState(action.code),
+                    report => { return { ...report, ...action.body }; }
                 ),
             };
-        case ERROR_REPORT_FIGHTS:
+        case ERROR_REPORT_META:
             return {
                 ...state,
                 requests: {
                     ...state.requests,
-                    fights: state.requests.fights.remove(action.code),
+                    meta: state.requests.meta.remove(action.code),
                 },
                 errors: state.errors.push(action.message),
+            };
+        case ERROR_UPDATE_QUERY:
+            return {
+                ...state,
+                requests: {
+                    ...state.requests,
+                    queries: state.requests.queries.remove([queryKey(action.query), action.code, action.fight])
+                },
+                errors: state.errors.push(action.body),
+            };
+        case RETRIEVED_UPDATE_QUERY:
+            return {
+                ...state,
+                requests: {
+                    ...state.requests,
+                    queries: state.requests.queries.remove([queryKey(action.query), action.code, action.fight])
+                },
+                pending_updates: state.pending_updates.push({ 
+                    key: [action.code, 'queries', queryKey(action.query), action.fight], 
+                    data: queryFormatData(action.code, action.fight, action.query, action.body)}
+                ),
+            };
+        case MERGE_UPDATES:
+            return {
+                ...state,
+                pending_updates: List(),
+                reports: state.pending_updates.reduce((reports, { key, data }) => reports.setIn(key, data), state.reports),
             };
         default:
             // const dummy: never = action;
@@ -266,8 +407,9 @@ export default function buildStore() {
     const persistCfg = {
         key: 'root',
         storage,
-        blacklist: ['requests'],
-        transforms: [immutableTransform()],
+        blacklist: ['requests', 'errors', 'pending_updates'],
+        transforms: [immutableTransform(), compressTransform()],
+        throttle: 5000,
     };
 
     const pReducer = persistReducer(persistCfg, rootReducer);
