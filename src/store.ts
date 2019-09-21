@@ -6,7 +6,6 @@ import storage from 'redux-persist/lib/storage';
 import immutableTransform from 'redux-persist-transform-immutable';
 import compressTransform from 'redux-persist-transform-compress';
 
-
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
 import { Guid as GuidCreator } from 'guid-typescript';
@@ -72,6 +71,7 @@ export interface ActorMeta {
 
 export type ReportState = {
     code: ReportCode,
+    lastUsed: number | null,
     fights: FightMeta[],
     friendlies: ActorMeta[],
     enemies: ActorMeta[],
@@ -89,6 +89,7 @@ export function lookupActor(report: ReportState, id: number): ActorMeta | undefi
 function emptyReportState(code: ReportCode): ReportState {
     return {
         code,
+        lastUsed: null,
         fights: [],
         friendlies: [],
         enemies: [],
@@ -387,6 +388,27 @@ export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction |
 export type ImportAction = BeginImportAction | ImportVizAction | CancelImportAction;
 export type DashboardAction = SetApiKeyAction | SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction;
 
+const PURGE_CUTOFF_MS = 2.592e8;
+function purgeQueries(state: AppState): AppState {
+    const activeQueries = Set(state.visualizations.valueSeq()
+        .filter(({ query }) => query !== null)
+        .map(({ query }) => queryKey(query!)));
+
+    const now = Date.now();
+    const purgedReports = state.reports.map((report) => {
+        return {
+            ...report,
+            queries: report.queries.filter((_result, key) => activeQueries.contains(key)),
+        };
+    }).filter((report, code) =>  state.main_report === code || 
+        (report.queries.count() > 0 && report.lastUsed && (now - report.lastUsed) < PURGE_CUTOFF_MS));
+
+    return {
+        ...state,
+        reports: purgedReports,
+    };
+}
+
 function rootReducer(state = initialState, action: DashboardAction): AppState {
     switch(action.type) {
         case SET_API_KEY:
@@ -395,8 +417,11 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                 api_key: action.key,
             };
         case SET_MAIN_REPORT:
+            const updatedReports = state.main_report ?
+                state.reports.update(state.main_report, (report) => { report.lastUsed = Date.now(); return report; }) : state.reports;
             return {
                 ...state,
+                reports: updatedReports,
                 main_report: action.code,
             }
         case CREATE_VIZ:
@@ -473,11 +498,12 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                 ),
             };
         case MERGE_UPDATES:
-            return {
+           const next_state = {
                 ...state,
                 pending_updates: List(),
                 reports: state.pending_updates.reduce((reports, { key, data }) => reports.setIn(key, data), state.reports),
             };
+            return purgeQueries(next_state);
         case DELETE_VIZ:
             return {
                 ...state,
