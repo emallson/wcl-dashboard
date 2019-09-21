@@ -26,3 +26,20 @@
         line-height: 1.5;
     }
 }
+
+.vega-embed {
+    .role-axis-title > text {
+        font-size: 1em !important;
+        font-family: "Linux Libertine", serif !important;
+    }
+
+    .role-axis-label > text {
+        font-size: 0.8em !important;
+        font-family: "Linux Libertine", serif !important;
+    }
+
+    .role-title > text {
+        font-size: 1.2em !important;
+        font-family: "Linux Libertine", serif !important;
+    }
+}

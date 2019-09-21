@@ -28,22 +28,6 @@ type QueryVizState = {
 }
 
 const vega_config = {
-    axis: {
-        labelFont: "Linux Libertine",
-        labelFontSize: 12,
-        titleFont: "Linux Libertine",
-        titleFontSize: 14,
-    },
-    legend: {
-        labelFont: "Linux Libertine",
-        labelFontSize: 12,
-        titleFont: "Linux Libertine",
-        titleFontSize: 14,
-    },
-    title: {
-        font: 'Linux Libertine',
-        fontSize: 16,
-    },
 };
 
 const vega_options: EmbedOptions = {
