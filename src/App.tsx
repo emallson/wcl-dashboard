@@ -2,9 +2,11 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import './App.css';
-import { Guid, ReportCode, ApiKey, AppState, createViz, setApiKey, setMainReport, updateReport } from './store';
+import { Guid, ReportCode, ApiKey, AppState, createViz, setApiKey, setMainReport, updateReport, BEGIN_IMPORT } from './store';
 
 import QueryViz from './QueryViz';
+import ExportView from './ExportView';
+import ImportView from './ImportView';
 
 const DemandApiKey: React.FC<{ setApiKey: (key: string) => void }> = ({ setApiKey }) => {
     return (
@@ -49,6 +51,9 @@ type Props = {
     createViz: typeof createViz,
     setMainReport: typeof setMainReport,
     updateReport: typeof updateReport,
+    beginImport: () => void,
+    exporting: Guid | null,
+    importing: boolean,
 };
 
 const InnerApp: React.FC<Props> = (props) => {
@@ -59,6 +64,9 @@ const InnerApp: React.FC<Props> = (props) => {
             <>
                 <MainReportCode code={props.code} setMainReport={props.setMainReport} updateReport={props.updateReport} />
                 <Queries code={props.code} create={props.createViz} guids={props.guids} />
+                { props.exporting ? <ExportView guid={props.exporting} /> : null }
+                { props.importing ? <ImportView /> : null }
+                <button id="btn-import" onClick={props.beginImport}>Import</button>
             </>
         );
     }
@@ -70,6 +78,7 @@ function mapDispatchToProps(dispatch: Dispatch) {
         createViz: () => dispatch(createViz()),
         setMainReport: (code: string | ReportCode) => dispatch(setMainReport(code)),
         updateReport: (code: ReportCode) => dispatch<any>(updateReport(code)),
+        beginImport: () => dispatch({ type: BEGIN_IMPORT }),
     };
 }
 
@@ -78,6 +87,8 @@ function mapStateToProps(state: AppState) {
         api_key: state.api_key,
         code: state.main_report, 
         guids: state.visualizations.keySeq().toArray(),
+        exporting: state.exporting,
+        importing: state.importing,
     };
 }
 

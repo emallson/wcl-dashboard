@@ -1,0 +1,31 @@
+@import "solarized";
+
+#export-background-block {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: $base03;
+    opacity: 0.5;
+    z-index: 5;
+}
+
+#export-view, #import-view {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+
+    background-color: $base2;
+
+    button {
+        float: right;
+        margin: 0.5em;
+    }
+
+    textarea {
+        margin: 0.5em;
+    }
+}

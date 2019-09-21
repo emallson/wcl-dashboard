@@ -1,6 +1,7 @@
 import React from 'react';
 import embed, { EmbedOptions, VisualizationSpec, Result } from 'vega-embed';
 import equal from 'fast-deep-equal';
+export * from 'vega-embed';
 
 type VegaProps = {
     spec: VisualizationSpec,

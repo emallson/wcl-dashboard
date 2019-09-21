@@ -3,10 +3,9 @@ import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
 import { queryData, QueryVizData } from './query';
-import { hasReportMeta, ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
-import Vega from './vega';
+import { exportViz, deleteViz, hasReportMeta, ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
+import Vega, { VisualizationSpec, EmbedOptions } from './vega';
 import QueryBuilder from './QueryBuilder';
-import { VisualizationSpec } from 'vega-embed';
 import 'brace';
 import 'brace/mode/json';
 import 'brace/theme/solarized_light';
@@ -17,23 +16,58 @@ import './QueryViz.scss';
 type QueryVizProps = { 
     state: VizState, 
     setSpec: typeof setVizSpec, 
+    deleteViz: typeof deleteViz,
+    exportViz: typeof exportViz,
     data: QueryVizData | undefined
 };
 
 type QueryVizState = {
     flipped: boolean;
+    menu: boolean;
     specString: string;
 }
+
+const vega_config = {
+    axis: {
+        labelFont: "Linux Libertine",
+        labelFontSize: 12,
+        titleFont: "Linux Libertine",
+        titleFontSize: 14,
+    },
+    legend: {
+        labelFont: "Linux Libertine",
+        labelFontSize: 12,
+        titleFont: "Linux Libertine",
+        titleFontSize: 14,
+    },
+    title: {
+        font: 'Linux Libertine',
+        fontSize: 16,
+    },
+};
+
+const vega_options: EmbedOptions = {
+    renderer: 'svg',
+    config: vega_config,
+};
 
 class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
     constructor(props: QueryVizProps) {
         super(props);
 
-        this.state = { flipped: !props.data, specString: JSON.stringify(props.state.spec, null, 2) };
+        this.state = { 
+            flipped: !props.data, 
+            menu: false,
+            specString: JSON.stringify(props.state.spec, null, 2) 
+        };
     }
 
     flip() {
         this.setState({ ...this.state, flipped: !this.state.flipped });
+    }
+
+    menu() {
+        this.setState({ menu: !this.state.menu });
     }
 
     updateNextSpec(newValue: string) {
@@ -41,14 +75,26 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
     }
 
     render() {
-        const { state, data, setSpec } = this.props;
+        const { state, data, setSpec, exportViz, deleteViz } = this.props;
         const spec = { ...state.spec, data } as VisualizationSpec;
         console.log(spec);
 
         if(this.state.flipped) {
             return (
                 <div className="query-viz">
-                    <div onClick={this.flip.bind(this)}>View</div>
+                    <div className="menuBar">
+                        <div onClick={this.flip.bind(this)}>View</div>
+                        <div className="dropdown">
+                            <div onClick={this.menu.bind(this)}>...</div>
+                            { this.state.menu ?
+                                (
+                                    <div className="dropdown-content">
+                                        <div onClick={() => { exportViz(state.guid); this.menu(); }}>Export</div>
+                                        <div onClick={() => deleteViz(state.guid)}>Delete</div>
+                                    </div>
+                            ) : null }
+                        </div>
+                    </div>
                     <QueryBuilder guid={state.guid} />
                     <AceEditor
                         value={this.state.specString} 
@@ -65,7 +111,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
             return (
                 <div className="query-viz">
                     <div onClick={this.flip.bind(this)}>Configure</div>
-                    {data ? <Vega spec={spec} /> : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>}
+                    {data ? <Vega spec={spec} options={vega_options}/> : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>}
                 </div>
             );
         }
@@ -84,6 +130,8 @@ const mapState = (state: AppState, { code, guid }: { code: ReportCode | null, gu
 const mapDispatch = (dispatch: Dispatch) => {
     return {
         setSpec: (guid: Guid, spec: string | object) => dispatch(setVizSpec(guid, spec)),
+        deleteViz: (guid: Guid) => dispatch(deleteViz(guid)),
+        exportViz: (guid: Guid) => dispatch(exportViz(guid)),
     };
 }
 

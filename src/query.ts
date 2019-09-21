@@ -19,11 +19,23 @@ export interface TableQuery {
 
 export type QueryKind = EventQuery | TableQuery;
 
+export function isQueryKind(val: any): val is QueryKind {
+    return (val.kind !== undefined && (val.kind === QueryType.Event || val.kind === QueryType.Table) &&
+        (val.kind !== QueryType.Table || ('table' in val && [TableKind.Damage, TableKind.DamageTaken, TableKind.Healing].includes(val.table))));
+}
+
 export type QueryMeta = {
     filter: string,
     bossid: string | null,
     kind: QueryKind,
     cutoff?: number,
+}
+
+export function isQueryMeta(val: any): val is QueryMeta {
+    return ('filter' in val && typeof val.filter === 'string' &&
+            'bossid' in val && (val.bossid === null || typeof val.bossid === 'string') &&
+            'kind' in val && isQueryKind(val.kind) &&
+            (!('cutoff' in val) || typeof val.cutoff === 'number'));
 }
 
 export interface QueryId extends Newtype<{readonly QueryId: unique symbol}, string> {}

@@ -1,6 +1,28 @@
 @import "solarized";
+@import "libertine";
 
 .query-viz {
     border: solid 1px $base03;
     padding: 1em;
+    margin: 1em;
+
+    .menuBar > div {
+        display: inline-block;
+    }
+}
+
+.dropdown {
+    position: relative;
+    float: right;
+}
+
+.dropdown-content {
+    position: absolute;
+    background: $base3;
+    border: solid 1px $base03;
+    padding: 0.75em;
+
+    div {
+        line-height: 1.5;
+    }
 }

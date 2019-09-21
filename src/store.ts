@@ -13,7 +13,7 @@ import { Guid as GuidCreator } from 'guid-typescript';
 import { Map, Set, List, Seq } from 'immutable';
 
 import { load_meta, load_query_data } from './request';
-import { QueryVizData, QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing } from './query';
+import { QueryVizData, QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta } from './query';
 
 export interface ApiKey extends Newtype<{readonly ApiKey: unique symbol}, string> {}
 
@@ -29,6 +29,12 @@ export type VizState = {
     guid: Guid,
     spec: object,
     query: QueryMeta | null,
+}
+
+export function isVizState(val: any): val is VizState {
+    return ('guid' in val && GuidCreator.isGuid(val.guid) &&
+        'spec' in val &&
+        'query' in val && (val.query === null || isQueryMeta(val.query)));
 }
 
 export type PendingUpdate = {
@@ -47,6 +53,8 @@ export type AppState = {
     errors: List<any>,
     visualizations: Map<Guid, VizState>,
     pending_updates: List<PendingUpdate>,
+    exporting: Guid | null,
+    importing: boolean,
 };
 
 export interface FightMeta {
@@ -99,6 +107,8 @@ const initialState: AppState = {
     errors: List(),
     visualizations: Map(),
     pending_updates: List(),
+    exporting: null,
+    importing: false,
 };
 
 export function bossList(reports: Seq.Indexed<ReportState>): Map<number, string> {
@@ -317,10 +327,65 @@ export function setVizQuery(guid: Guid, kind: string, table: string | null, filt
     };
 }
 
+export const DELETE_VIZ = Symbol("DELETE_VIZ");
+interface DeleteVizAction {
+    type: typeof DELETE_VIZ,
+    guid: Guid,
+}
+
+export function deleteViz(guid: Guid) {
+    return {
+        type: DELETE_VIZ,
+        guid,
+    };
+}
+
+export const EXPORT_VIZ = Symbol("EXPORT_VIZ");
+interface ExportVizAction {
+    type: typeof EXPORT_VIZ,
+    guid: Guid,
+}
+
+export function exportViz(guid: Guid) {
+    return {
+        type: EXPORT_VIZ,
+        guid,
+    }
+}
+
+export const CLOSE_EXPORT_VIEW = Symbol("CLOSE_EXPORT_VIEW");
+interface CloseExportViewAction {
+    type: typeof CLOSE_EXPORT_VIEW,
+}
+
+export const BEGIN_IMPORT = Symbol("BEGIN_IMPORT");
+interface BeginImportAction {
+    type: typeof BEGIN_IMPORT,
+}
+
+export const CANCEL_IMPORT = Symbol("CANCEL_IMPORT");
+interface CancelImportAction {
+    type: typeof CANCEL_IMPORT,
+}
+
+export const IMPORT_VIZ = Symbol("IMPORT_VIZ");
+interface ImportVizAction {
+    type: typeof IMPORT_VIZ,
+    state: VizState,
+}
+
+export function importViz(state: VizState) {
+    return {
+        type: IMPORT_VIZ,
+        state,
+    }
+}
+
 export type MetaActions = RequestReportMetaAction | RetrievedReportMeta | ErrorReportMeta;
 export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction;
-export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction;
-export type DashboardAction = SetApiKeyAction | SetMainReportAction | MetaActions | VizAction | QueryAction;
+export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | ExportVizAction | CloseExportViewAction;
+export type ImportAction = BeginImportAction | ImportVizAction | CancelImportAction;
+export type DashboardAction = SetApiKeyAction | SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction;
 
 function rootReducer(state = initialState, action: DashboardAction): AppState {
     switch(action.type) {
@@ -413,6 +478,37 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                 pending_updates: List(),
                 reports: state.pending_updates.reduce((reports, { key, data }) => reports.setIn(key, data), state.reports),
             };
+        case DELETE_VIZ:
+            return {
+                ...state,
+                visualizations: state.visualizations.remove(action.guid),
+            };
+        case EXPORT_VIZ:
+            return {
+                ...state,
+                exporting: action.guid,
+            };
+        case CLOSE_EXPORT_VIEW:
+            return {
+                ...state,
+                exporting: null,
+            };
+        case BEGIN_IMPORT:
+            return {
+                ...state,
+                importing: true
+            };
+        case CANCEL_IMPORT:
+            return {
+                ...state,
+                importing: false
+            };
+        case IMPORT_VIZ:
+            return {
+                ...state,
+                visualizations: state.visualizations.set(action.state.guid, action.state),
+                importing: false,
+            };
         default:
             // const dummy: never = action;
             console.log("no action found");
@@ -424,9 +520,8 @@ export default function buildStore() {
     const persistCfg = {
         key: 'root',
         storage,
-        blacklist: ['requests', 'errors', 'pending_updates'],
+        blacklist: ['requests', 'errors', 'pending_updates', 'exporting', 'importing'],
         transforms: [immutableTransform(), compressTransform()],
-        throttle: 5000,
     };
 
     const pReducer = persistReducer(persistCfg, rootReducer);
