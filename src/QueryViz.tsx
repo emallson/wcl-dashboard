@@ -27,11 +27,29 @@ type QueryVizState = {
     specString: string;
 }
 
+const emSize = Number(getComputedStyle(document.body,null)!.fontSize!.replace(/[^\d]/g, ''));
+
 const vega_config = {
+    axis: {
+        labelFont: "Linux Libertine",
+        labelFontSize: 0.8 * emSize,
+        titleFont: "Linux Libertine",
+        titleFontSize: 1 * emSize,
+    },
+    legend: {
+        labelFont: "Linux Libertine",
+        labelFontSize: 0.8 * emSize,
+        titleFont: "Linux Libertine",
+        titleFontSize: 0.8 * emSize,
+    },
+    title: {
+        font: 'Linux Libertine',
+        fontSize: 1.2 * emSize,
+    },
 };
 
 const vega_options: EmbedOptions = {
-    renderer: 'svg',
+    renderer: 'canvas',
     config: vega_config,
 };
 
