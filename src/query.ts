@@ -23,6 +23,7 @@ export type QueryMeta = {
     filter: string,
     bossid: string | null,
     kind: QueryKind,
+    cutoff?: number,
 }
 
 export interface QueryId extends Newtype<{readonly QueryId: unique symbol}, string> {}
@@ -77,9 +78,9 @@ function createQueryKind(kind: string, table: string | null): QueryKind {
     }
 }
 
-export function createQueryMeta(kind: string, table: string | null, filter: string, bossid: string | null): QueryMeta {
+export function createQueryMeta(kind: string, table: string | null, filter: string, bossid: string | null, cutoff: number | undefined): QueryMeta {
     return {
-        filter, bossid,
+        filter, bossid, cutoff,
         kind: createQueryKind(kind, table)
     };
 }

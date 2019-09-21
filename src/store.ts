@@ -309,11 +309,11 @@ interface SetVizQueryAction {
     query: QueryMeta,
 }
 
-export function setVizQuery(guid: Guid, kind: string, table: string | null, filter: string, bossid: string | null) {
+export function setVizQuery(guid: Guid, kind: string, table: string | null, filter: string, bossid: string | null, cutoff: number | undefined) {
     return {
         type: SET_VIZ_QUERY,
         guid: guid,
-        query: createQueryMeta(kind, table, filter, bossid),
+        query: createQueryMeta(kind, table, filter, bossid, cutoff),
     };
 }
 

@@ -35,6 +35,7 @@ export async function load_query_data(key: ApiKey, code: ReportCode, fight: Figh
         start: fight.start_time,
         end: fight.end_time,
         filter: query.filter,
+        ...(query.cutoff ? { cutoff: query.cutoff } : {})
     });
 
     console.log(url);

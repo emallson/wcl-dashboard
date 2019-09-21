@@ -22,23 +22,22 @@ type QueryVizProps = {
 
 type QueryVizState = {
     flipped: boolean;
+    specString: string;
 }
 
 class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
-    _nextSpec: string | null = null;
-
     constructor(props: QueryVizProps) {
         super(props);
 
-        this.state = { flipped: !props.data };
+        this.state = { flipped: !props.data, specString: JSON.stringify(props.state.spec, null, 2) };
     }
 
     flip() {
-        this.setState({ flipped: !this.state.flipped });
+        this.setState({ ...this.state, flipped: !this.state.flipped });
     }
 
     updateNextSpec(newValue: string) {
-        this._nextSpec = newValue;
+        this.setState({ ...this.state, specString: newValue });
     }
 
     render() {
@@ -52,15 +51,13 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                     <div onClick={this.flip.bind(this)}>View</div>
                     <QueryBuilder guid={state.guid} />
                     <AceEditor
-                        defaultValue={JSON.stringify(state.spec, null, 2)} 
+                        value={this.state.specString} 
                         onChange={this.updateNextSpec.bind(this)}
                         theme="solarized_light"
                         mode="json"
                     />
                     <input type="button" value="Update" onClick={() => {
-                        if(this._nextSpec !== null) {
-                            setSpec(state.guid, this._nextSpec);
-                        }
+                        setSpec(state.guid, this.state.specString);
                     }} />
                 </div>
             );
