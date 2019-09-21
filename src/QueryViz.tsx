@@ -47,7 +47,7 @@ const vega_config = {
 };
 
 const vega_options: EmbedOptions = {
-    renderer: 'canvas',
+    renderer: 'svg',
     config: vega_config,
 };
 
