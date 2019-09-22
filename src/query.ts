@@ -64,6 +64,7 @@ export function missingFights(query: QueryMeta, report: ReportCode, state: AppSt
     const report_data = state.reports.get(report)!;
     const query_data = report_data.queries.get(queryKey(query));
     const relevant_fights = report_data.fights
+        .filter(({boss}) => boss > 0) // only include boss fights, no trash
         .filter(({boss}) => query.bossid === null || String(boss) === query.bossid)
         // TODO: this probably doesn't work as intended
         .filter(({id}) => !state.requests.queries.contains([queryKey(query), report, id]));
