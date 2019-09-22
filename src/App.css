@@ -1,8 +1,11 @@
-.root {}
+#root {
+    margin: 1em;
+}
 
 .query-list {
     margin-top: 2em;
     display: flex;
+    width: 100%;
     flex-wrap: wrap;
     align-items: flex-start;
     align-content: flex-start;

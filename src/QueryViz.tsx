@@ -10,8 +10,10 @@ import 'brace';
 import 'brace/mode/json';
 import 'brace/theme/solarized_light';
 import AceEditor from 'react-ace';
+import { SortableHandle, SortableElement } from 'react-sortable-hoc';
 
 import './QueryViz.scss';
+import './grip.css';
 
 type QueryVizProps = { 
     state: VizState, 
@@ -53,6 +55,12 @@ const vega_options: EmbedOptions = {
     config: vega_config,
 };
 
+const Handle = SortableHandle(() => {
+    return (
+        <span className="grippy" style={{marginRight: 8}}></span>
+    );
+});
+
 class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
     constructor(props: QueryVizProps) {
         super(props);
@@ -85,7 +93,8 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
             return (
                 <div className="query-viz">
                     <div className="menuBar">
-                        <div onClick={this.flip.bind(this)}>View</div>
+                        <Handle />
+                        <span onClick={this.flip.bind(this)}>View</span>
                         <div className="dropdown">
                             <div onClick={this.menu.bind(this)}>...</div>
                             { this.state.menu ?
@@ -112,7 +121,10 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
         } else {
             return (
                 <div className="query-viz">
-                    <div onClick={this.flip.bind(this)}>Configure</div>
+                    <div className="menuBar">
+                        <Handle />
+                        <span onClick={this.flip.bind(this)}>Configure</span>
+                    </div>
                     {data ? <Vega spec={spec} options={vega_options}/> : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>}
                 </div>
             );
@@ -137,4 +149,4 @@ const mapDispatch = (dispatch: Dispatch) => {
     };
 }
 
-export default connect(mapState, mapDispatch)(QueryViz);
+export default connect(mapState, mapDispatch)(SortableElement(QueryViz));

@@ -1,7 +1,7 @@
 import { Action, createStore, applyMiddleware } from 'redux';
 import thunkMiddleware, { ThunkAction } from 'redux-thunk';
 import { createLogger } from 'redux-logger';
-import { persistStore, persistReducer} from 'redux-persist';
+import { persistStore, persistReducer, createMigrate } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import immutableTransform from 'redux-persist-transform-immutable';
 import compressTransform from 'redux-persist-transform-compress';
@@ -9,7 +9,7 @@ import compressTransform from 'redux-persist-transform-compress';
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
 import { Guid as GuidCreator } from 'guid-typescript';
-import { Map, Set, List, Seq } from 'immutable';
+import { Map, OrderedMap, Set, List, Seq } from 'immutable';
 
 import { load_meta, load_query_data } from './request';
 import { QueryVizData, QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta } from './query';
@@ -27,13 +27,15 @@ export const Guid = prism<Guid>(GuidCreator.isGuid);
 export type VizState = {
     guid: Guid,
     spec: object,
+    index: number,
     query: QueryMeta | null,
 }
 
 export function isVizState(val: any): val is VizState {
     return ('guid' in val && GuidCreator.isGuid(val.guid) &&
         'spec' in val &&
-        'query' in val && (val.query === null || isQueryMeta(val.query)));
+        'query' in val && (val.query === null || isQueryMeta(val.query)) &&
+        'index' in val && typeof val.index === 'number');
 }
 
 export type PendingUpdate = {
@@ -42,6 +44,7 @@ export type PendingUpdate = {
 };
 
 export type AppState = {
+    version: number,
     api_key: ApiKey | null,
     main_report: ReportCode | null,
     reports: Map<ReportCode, ReportState>,
@@ -50,7 +53,7 @@ export type AppState = {
         queries: Set<[QueryId, ReportCode, number]>,
     },
     errors: List<any>,
-    visualizations: Map<Guid, VizState>,
+    visualizations: OrderedMap<Guid, VizState>,
     pending_updates: List<PendingUpdate>,
     exporting: Guid | null,
     importing: boolean,
@@ -97,7 +100,10 @@ function emptyReportState(code: ReportCode): ReportState {
     };
 }
 
+const CURRENT_VERSION = 1;
+
 const initialState: AppState = {
+    version: CURRENT_VERSION,
     api_key: null,
     main_report: null,
     reports: Map(),
@@ -341,6 +347,21 @@ export function deleteViz(guid: Guid) {
     };
 }
 
+export const UPDATE_VIZ_ORDER = Symbol("UPDATE_VIZ_ORDER");
+interface UpdateVizOrderAction {
+    type: typeof UPDATE_VIZ_ORDER,
+    guid: Guid,
+    oldIndex: number,
+    newIndex: number,
+}
+
+export function updateVizOrder(guid: Guid, oldIndex: number, newIndex: number) {
+    return {
+        type: UPDATE_VIZ_ORDER,
+        guid, oldIndex, newIndex
+    };
+}
+
 export const EXPORT_VIZ = Symbol("EXPORT_VIZ");
 interface ExportVizAction {
     type: typeof EXPORT_VIZ,
@@ -384,7 +405,7 @@ export function importViz(state: VizState) {
 
 export type MetaActions = RequestReportMetaAction | RetrievedReportMeta | ErrorReportMeta;
 export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction;
-export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | ExportVizAction | CloseExportViewAction;
+export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | ExportVizAction | CloseExportViewAction | UpdateVizOrderAction;
 export type ImportAction = BeginImportAction | ImportVizAction | CancelImportAction;
 export type DashboardAction = SetApiKeyAction | SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction;
 
@@ -432,6 +453,7 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                     guid,
                     spec: {},
                     query: null, 
+                    index: state.visualizations.count(),
                 })
             };
         case SET_VIZ_SPEC:
@@ -509,6 +531,22 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                 ...state,
                 visualizations: state.visualizations.remove(action.guid),
             };
+        case UPDATE_VIZ_ORDER:
+            const direction = Math.sign(action.oldIndex - action.newIndex);
+            return {
+                ...state,
+                visualizations: state.visualizations.map((viz) => {
+                    if(viz.index < Math.min(action.oldIndex, action.newIndex) || viz.index > Math.max(action.oldIndex, action.newIndex)) {
+                        return viz; // don't need to change anything
+                    } else if (viz.index === action.oldIndex) {
+                        viz.index = action.newIndex;
+                        return viz;
+                    } else {
+                        viz.index += direction;
+                        return viz;
+                    }
+                }).sort((a, b) => a.index - b.index)
+            };
         case EXPORT_VIZ:
             return {
                 ...state,
@@ -542,12 +580,33 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
     }
 }
 
+const migrations = {
+    0: (state: any) => {
+        let index = 0;
+        return {
+            ...state,
+            visualizations: state.visualizations.map((viz: any) => {
+                if(typeof viz.index === 'number' && Number.isFinite(viz.index)) {
+                    index += 1;
+                    return viz;
+                } else {
+                    viz.index = index;
+                    index += 1;
+                    return viz;
+                }
+            }),
+        };
+    }
+};
+
 export default function buildStore() {
     const persistCfg = {
         key: 'root',
+        version: CURRENT_VERSION,
         storage,
         blacklist: ['requests', 'errors', 'pending_updates', 'exporting', 'importing'],
         transforms: [immutableTransform(), compressTransform()],
+        migrate: createMigrate(migrations, {debug: true}),
     };
 
     const pReducer = persistReducer(persistCfg, rootReducer);

@@ -40,11 +40,9 @@ const QueryBuilder: React.FC<QueryBuilderProps> = ({ guid, meta, setVizQuery, bo
     const filterEditor = meta ? (
         <>
             <label>Filter</label>
-            <input type="text" defaultValue={meta.filter} 
-                onBlur={(e) => setVizQuery(guid, meta.kind.kind, tableKind(meta), e.target.value, meta.bossid, meta.cutoff)}
-        />
-        </>
-            ) : null;
+            <textarea defaultValue={meta.filter} cols={40} rows={2} 
+                onBlur={(e) => setVizQuery(guid, meta.kind.kind, tableKind(meta), e.target.value, meta.bossid, meta.cutoff)} />
+        </>) : null;
 
     const cutoffEditor = meta ? (
         <>
