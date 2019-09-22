@@ -110,6 +110,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                     <AceEditor
                         value={this.state.specString} 
                         onChange={this.updateNextSpec.bind(this)}
+                        tabSize={2}
                         theme="solarized_light"
                         mode="json"
                     />
