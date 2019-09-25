@@ -62,6 +62,8 @@ const Handle = SortableHandle(() => {
 });
 
 class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
+    static whyDidYouRender = true;
+
     constructor(props: QueryVizProps) {
         super(props);
 

@@ -10,6 +10,7 @@ type VegaProps = {
 };
 
 export default class Vega extends React.Component<VegaProps> {
+    static whyDidYouRender = true;
     plotRef = React.createRef<HTMLDivElement>();
     promise?: Promise<Result['view'] | undefined>;
 

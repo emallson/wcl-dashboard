@@ -2,7 +2,7 @@ import { Action, createStore, applyMiddleware } from 'redux';
 import thunkMiddleware, { ThunkAction } from 'redux-thunk';
 import { createLogger } from 'redux-logger';
 import { persistStore, persistReducer, createMigrate } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
+import storage from 'localforage';
 import immutableTransform from 'redux-persist-transform-immutable';
 import compressTransform from 'redux-persist-transform-compress';
 
