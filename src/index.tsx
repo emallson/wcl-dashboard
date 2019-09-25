@@ -6,9 +6,9 @@ import './index.css';
 import App from './App';
 import buildStore from './store';
 import * as serviceWorker from './serviceWorker';
-import whyDidYouRender from '@welldone-software/why-did-you-render/dist/no-classes-transpile/umd/whyDidYouRender.min.js';
+// import whyDidYouRender from '@welldone-software/why-did-you-render/dist/no-classes-transpile/umd/whyDidYouRender.min.js';
 
-whyDidYouRender(React);
+// whyDidYouRender(React);
 
 const { store, persistor } = buildStore()
 
