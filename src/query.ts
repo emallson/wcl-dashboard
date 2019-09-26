@@ -1,4 +1,4 @@
-import { AppState, ReportCode, lookupActor } from './store';
+import { AppState, ReportCode, lookupActorName } from './store';
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
 
@@ -116,8 +116,8 @@ export function queryFormatData(report: ReportCode, fight: number, query: QueryM
                 values: edata.events.map((datum) => {
                     return {
                         report, fight,
-                        sourceName: datum.sourceID ? lookupActor(report_data, datum.sourceID)!.name : undefined,
-                        targetName: datum.targetID ? lookupActor(report_data, datum.targetID)!.name : undefined,
+                        sourceName: datum.sourceID ? lookupActorName(report_data, datum.sourceID, "Unknown") : undefined,
+                        targetName: datum.targetID ? lookupActorName(report_data, datum.targetID, "Unknown") : undefined,
                         ...datum,
                     };
                 }),
@@ -139,7 +139,7 @@ export function queryFormatData(report: ReportCode, fight: number, query: QueryM
 
 export type QueryVizData = {
     name: string,
-    values: object[],
+    values: any[],
 };
 export function queryData(query: QueryMeta, code: ReportCode | null, state: AppState): QueryVizData {
     if(code === null) {
@@ -154,4 +154,19 @@ export function queryData(query: QueryMeta, code: ReportCode | null, state: AppS
             return { name: 'data', values: query_data.valueSeq().reduce((full, {values: next}) => full.concat(next), [] as object[])};
         }
     }
+}
+
+export function queryDataChanged(newData: QueryVizData, oldData: QueryVizData): boolean {
+    // if the name or length has changed...
+    if(newData.name !== oldData.name || newData.values.length !== oldData.values.length) {
+        return true;
+    } 
+
+    // or the timestmaps of the first/last events have changed
+    if(newData.values.length > 0 && oldData.values.length > 0) {
+        return newData.values[0].timestamp !== oldData.values[0].timestamp ||
+            newData.values[newData.values.length - 1].timestamp !== oldData.values[oldData.values.length - 1].timestamp;
+    }
+
+    return false;
 }

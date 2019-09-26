@@ -2,7 +2,7 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
-import { queryData, QueryVizData } from './query';
+import { queryData, QueryVizData, queryDataChanged } from './query';
 import { exportViz, deleteViz, hasReportMeta, ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
 import QueryBuilder from './QueryBuilder';
@@ -11,6 +11,7 @@ import 'brace/mode/json';
 import 'brace/theme/solarized_light';
 import AceEditor from 'react-ace';
 import { SortableHandle, SortableElement } from 'react-sortable-hoc';
+import equal from 'fast-deep-equal';
 
 import './QueryViz.scss';
 import './grip.css';
@@ -72,6 +73,18 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
             menu: false,
             specString: JSON.stringify(props.state.spec, null, 2) 
         };
+    }
+
+    shouldComponentUpdate(nextProps: QueryVizProps, nextState: QueryVizState) {
+        if(!equal(nextState, this.state) || !equal(nextProps.state, this.props.state)) {
+            return true;
+        } else if(typeof nextProps.data !== typeof this.props.data) {
+            return true;
+        } else if(nextProps.data !== undefined && this.props.data !== undefined) {
+            return queryDataChanged(nextProps.data, this.props.data);
+        }
+
+        return false;
     }
 
     flip() {
