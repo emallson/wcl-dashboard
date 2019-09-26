@@ -448,7 +448,12 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
             };
         case SET_MAIN_REPORT:
             const updatedReports = state.main_report ?
-                state.reports.update(state.main_report, (report) => { report.lastUsed = Date.now(); return report; }) : state.reports;
+                state.reports.update(state.main_report, (report) => { 
+                    // currently not erroring on receiving an invalid
+                    // report ugh
+                    if (report) { report.lastUsed = Date.now(); } 
+                    return report; 
+                }) : state.reports;
             return {
                 ...state,
                 reports: updatedReports,
