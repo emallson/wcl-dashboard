@@ -4,7 +4,7 @@ import { createLogger } from 'redux-logger';
 import { persistStore, persistReducer, createMigrate } from 'redux-persist';
 import storage from 'localforage';
 import immutableTransform from 'redux-persist-transform-immutable';
-import compressTransform from 'redux-persist-transform-compress';
+import decompressTransform from './decompress';
 
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
@@ -619,7 +619,7 @@ export default function buildStore() {
         version: CURRENT_VERSION,
         storage,
         blacklist: ['requests', 'errors', 'pending_updates', 'exporting', 'importing'],
-        transforms: [immutableTransform(), compressTransform()],
+        transforms: [immutableTransform(), decompressTransform()],
         migrate: createMigrate(migrations, {debug: true}),
     };
 
