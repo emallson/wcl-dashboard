@@ -4,7 +4,6 @@ import { createLogger } from 'redux-logger';
 import { persistStore, persistReducer, createMigrate } from 'redux-persist';
 import storage from 'localforage';
 import immutableTransform from 'redux-persist-transform-immutable';
-import decompressTransform from './decompress';
 
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
@@ -12,7 +11,7 @@ import { Guid as GuidCreator } from 'guid-typescript';
 import { Map, OrderedMap, Set, List, Seq } from 'immutable';
 
 import { load_meta, load_query_data } from './request';
-import { QueryVizData, QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta } from './query';
+import { QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData } from './query';
 
 export interface ApiKey extends Newtype<{readonly ApiKey: unique symbol}, string> {}
 
@@ -39,8 +38,8 @@ export function isVizState(val: any): val is VizState {
 }
 
 export type PendingUpdate = {
-    key: [ReportCode, string, QueryId, number],
-    data: QueryVizData,
+    key: [ReportCode, string, QueryId, string],
+    index: number,
 };
 
 export type AppState = {
@@ -78,7 +77,7 @@ export type ReportState = {
     fights: FightMeta[],
     friendlies: ActorMeta[],
     enemies: ActorMeta[],
-    queries: Map<QueryId, Map<string, QueryVizData>>
+    queries: Map<QueryId, Map<string, number>>
 };
 
 export function lookupActor(report: ReportState, id: number): ActorMeta | undefined {
@@ -109,7 +108,7 @@ function emptyReportState(code: ReportCode): ReportState {
     };
 }
 
-const CURRENT_VERSION = 1;
+const CURRENT_VERSION = 2;
 
 const initialState: AppState = {
     version: CURRENT_VERSION,
@@ -240,7 +239,7 @@ interface RetrievedUpdateQueryAction {
     code: ReportCode,
     fight: number,
     query: QueryMeta,
-    body: object,
+    index: number,
 }
 
 export const ERROR_UPDATE_QUERY = Symbol("ERROR_UPDATE_QUERY");
@@ -255,6 +254,21 @@ interface ErrorUpdateQueryAction {
 export const MERGE_UPDATES = Symbol("MERGE_UPDATES");
 interface MergeUpdatesAction {
     type: typeof MERGE_UPDATES,
+}
+
+// query data has been removed by some external force, clear out the
+// stored index
+export const CLEAR_QUERY_INDEX = Symbol("CLEAR_QUERY_INDEX");
+interface ClearQueryIndexAction {
+    type: typeof CLEAR_QUERY_INDEX,
+    indices: number[],
+}
+
+export function clearQueryIndex(indices: number[]): ClearQueryIndexAction {
+    return {
+        type: CLEAR_QUERY_INDEX,
+        indices,
+    };
 }
 
 export function updateQueries(code: ReportCode): ThunkAction<void, AppState, undefined, Action> {
@@ -277,9 +291,13 @@ export function updateQueries(code: ReportCode): ThunkAction<void, AppState, und
 
             Promise.all(fights.map(fight => {
                 return load_query_data(app_state.api_key!, code, report.fights.find(({ id }) => id === fight)!, query!)
-                    .then(body => dispatch({
+                    .then(body => {
+                        const data = queryFormatData(code, fight, query!, body, app_state);
+                        return storeData(code, fight, query!, data);
+                    })
+                    .then(index => dispatch({
                         type: RETRIEVED_UPDATE_QUERY,
-                        code, fight, query, body,
+                        code, fight, query, index,
                     }),
                         body => {
                             console.error(body);
@@ -413,7 +431,7 @@ export function importViz(state: VizState) {
 }
 
 export type MetaActions = RequestReportMetaAction | RetrievedReportMeta | ErrorReportMeta;
-export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction;
+export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction | ClearQueryIndexAction;
 export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | ExportVizAction | CloseExportViewAction | UpdateVizOrderAction;
 export type ImportAction = BeginImportAction | ImportVizAction | CancelImportAction;
 export type DashboardAction = SetApiKeyAction | SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction;
@@ -529,15 +547,15 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                     queries: state.requests.queries.remove([queryKey(action.query), action.code, action.fight])
                 },
                 pending_updates: state.pending_updates.push({ 
-                    key: [action.code, 'queries', queryKey(action.query), action.fight], 
-                    data: queryFormatData(action.code, action.fight, action.query, action.body, state)}
-                ),
+                    key: [action.code, 'queries', queryKey(action.query), action.fight.toString()], 
+                    index: action.index,
+                }),
             };
         case MERGE_UPDATES:
            const next_state = {
                 ...state,
                 pending_updates: List(),
-                reports: state.pending_updates.reduce((reports, { key, data }) => reports.setIn(key, data), state.reports),
+                reports: state.pending_updates.reduce((reports, { key, index }) => reports.setIn(key, index), state.reports),
             };
             return purgeQueries(next_state);
         case DELETE_VIZ:
@@ -587,6 +605,16 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                 visualizations: state.visualizations.set(action.state.guid, action.state),
                 importing: false,
             };
+        case CLEAR_QUERY_INDEX:
+            return {
+                ...state,
+                reports: state.reports.map((report) => {
+                    return {
+                        ...report,
+                        queries: report.queries.map((q) => q.filterNot((index) => action.indices.includes(index))),
+                    };
+                }),
+            };
         default:
             // const dummy: never = action;
             console.log("no action found");
@@ -610,6 +638,17 @@ const migrations = {
                 }
             }),
         };
+    },
+    1: (state: any) => {
+        return {
+            ...state,
+            reports: state.reports.map((report: any) => {
+                return {
+                    ...report,
+                    queries: Map(),
+                };
+            })
+        };
     }
 };
 
@@ -619,7 +658,7 @@ export default function buildStore() {
         version: CURRENT_VERSION,
         storage,
         blacklist: ['requests', 'errors', 'pending_updates', 'exporting', 'importing'],
-        transforms: [immutableTransform(), decompressTransform()],
+        transforms: [immutableTransform()],
         migrate: createMigrate(migrations, {debug: true}),
     };
 

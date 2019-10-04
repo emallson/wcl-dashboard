@@ -1,6 +1,30 @@
 import { AppState, ReportCode, lookupActorName } from './store';
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
+import Dexie from 'dexie';
+
+interface QueryDataRecord {
+    id?: number,
+    report: string,
+    fight: number,
+    queryKey: string,
+    data: QueryVizData,
+}
+
+class QueryDataDB extends Dexie {
+    records: Dexie.Table<QueryDataRecord, number>;
+
+    constructor() {
+        super("QueryData");
+        this.version(1).stores({
+            records: '++id, report, fight, queryKey',
+        });
+
+        this.records = this.table('records');
+    }
+}
+
+const db = new QueryDataDB();
 
 export enum QueryType { Event = "event", Table = "table" }
 export interface EventQuery {
@@ -45,6 +69,24 @@ export function queryKey(query: QueryMeta): QueryId {
     return toNullable(QueryId.getOption(JSON.stringify(query)))!;
 }
 
+async function loadFightData(report: ReportCode, fight: number | number[], query: QueryMeta): Promise<QueryDataRecord[]> {
+    return db.records.where({
+        report: report.toString(), fight, meta: queryKey(query).toString()
+    }).toArray();
+}
+
+export async function getDataById(indices: number[]): Promise<(QueryDataRecord | undefined)[]> {
+    return Promise.all(indices.map((index) => db.records.get(index)));
+}
+
+export async function storeData(report: ReportCode, fight: number, query: QueryMeta, data: QueryVizData): Promise<number> {
+    return db.records.put({
+        report: report.toString(),
+        queryKey: queryKey(query).toString(),
+        fight, data,
+    });
+}
+
 export function shouldUpdate(query: QueryMeta, report: ReportCode, state: AppState): boolean {
     const report_data = state.reports.get(report);
     if(report_data === undefined) {
@@ -60,19 +102,25 @@ export function shouldUpdate(query: QueryMeta, report: ReportCode, state: AppSta
     return false;
 }
 
-export function missingFights(query: QueryMeta, report: ReportCode, state: AppState): number[] {
+function relevantFights(query: QueryMeta, report: ReportCode, state: AppState): number[] {
     const report_data = state.reports.get(report)!;
-    const query_data = report_data.queries.get(queryKey(query));
     const relevant_fights = report_data.fights
         .filter(({boss}) => boss > 0) // only include boss fights, no trash
         .filter(({boss}) => query.bossid === null || String(boss) === query.bossid)
         // TODO: this probably doesn't work as intended
-        .filter(({id}) => !state.requests.queries.contains([queryKey(query), report, id]));
+        .filter(({id}) => !state.requests.queries.contains([queryKey(query), report, id]))
+        .map(({id}) => id);
+    return relevant_fights;
+}
+
+export function missingFights(query: QueryMeta, report: ReportCode, state: AppState): number[] {
+    const report_data = state.reports.get(report)!;
+    const query_data = report_data.queries.get(queryKey(query));
+    const relevant_fights = relevantFights(query, report, state);
     if (query_data === undefined) {
-        return relevant_fights.map(({id}) => id);
+        return relevant_fights;
     } else {
-        return relevant_fights.filter(({id}) => !query_data.has(id.toString()))
-            .map(({id}) => id);
+        return relevant_fights.filter((id) => !query_data.has(id.toString()));
     }
 }
 
@@ -141,18 +189,18 @@ export type QueryVizData = {
     name: string,
     values: any[],
 };
-export function queryData(query: QueryMeta, code: ReportCode | null, state: AppState): QueryVizData {
-    if(code === null) {
-        return { name: 'data', values: state.reports.valueSeq()
-            .map(({code}) => queryData(query, code, state))
-            .reduce((full, {values: next}) => full.concat(next), [] as object[])};
+export async function queryData(query: QueryMeta, code: ReportCode, state: AppState): Promise<QueryVizData | null> {
+    const query_data = await loadFightData(code, relevantFights(query, code, state), query);
+    if(query_data.length === 0) {
+        return Promise.resolve(null);
     } else {
-        const query_data = state.reports.get(code)!.queries.get(queryKey(query));
-        if(query_data === undefined) {
-            return { name: 'data', values: [] }
-        } else {
-            return { name: 'data', values: query_data.valueSeq().reduce((full, {values: next}) => full.concat(next), [] as object[])};
-        }
+        const values = query_data
+            .map(({data}) => data)
+            .reduce((full, {values: next}) => full.concat(next), [] as object[]);
+        return Promise.resolve({ 
+            name: 'data',
+            values,
+        });
     }
 }
 

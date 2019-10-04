@@ -2,8 +2,8 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
-import { queryData, QueryVizData, queryDataChanged } from './query';
-import { exportViz, deleteViz, hasReportMeta, ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
+import { queryKey, getDataById, QueryMeta, QueryVizData, queryDataChanged } from './query';
+import { clearQueryIndex, exportViz, deleteViz, hasReportMeta, ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
 import QueryBuilder from './QueryBuilder';
 import 'brace';
@@ -21,13 +21,15 @@ type QueryVizProps = {
     setSpec: typeof setVizSpec, 
     deleteViz: typeof deleteViz,
     exportViz: typeof exportViz,
-    data: QueryVizData | undefined
+    clearQueryIndex: typeof clearQueryIndex,
+    data_indices: number[] | null
 };
 
 type QueryVizState = {
     flipped: boolean;
     menu: boolean;
     specString: string;
+    data: QueryVizData | null;
 }
 
 const emSize = Number(getComputedStyle(document.body,null)!.fontSize!.replace(/[^\d]/g, ''));
@@ -69,22 +71,54 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
         super(props);
 
         this.state = { 
-            flipped: !props.data, 
+            flipped: false,
             menu: false,
-            specString: JSON.stringify(props.state.spec, null, 2) 
+            specString: JSON.stringify(props.state.spec, null, 2),
+            data: null,
         };
     }
 
     shouldComponentUpdate(nextProps: QueryVizProps, nextState: QueryVizState) {
-        if(!equal(nextState, this.state) || !equal(nextProps.state, this.props.state)) {
+        if(!equal(nextProps, this.props)) {
             return true;
-        } else if(typeof nextProps.data !== typeof this.props.data) {
+        } else if(this.state.data === null && !equal(nextState, this.state)) {
             return true;
-        } else if(nextProps.data !== undefined && this.props.data !== undefined) {
-            return queryDataChanged(nextProps.data, this.props.data);
+        } else if(nextState.data !== null && this.state.data !== null) {
+            return queryDataChanged(nextState.data, this.state.data);
         }
 
-        return false;
+        return !equal({ ...nextState, data: null }, { ...this.state, data: null });
+    }
+
+    _updateData() {
+        if(this.props.data_indices !== null) {
+            getDataById(this.props.data_indices)
+                .then((data) => {
+                    const present_ids = data.filter(datum => datum !== undefined).map(datum => datum!.id);
+                    const missing_data = this.props.data_indices!.filter(id => !present_ids.includes(id));
+                    if(missing_data.length > 0) {
+                        this.props.clearQueryIndex(missing_data);
+                    }
+                    this.setState({
+                        data: {
+                            name: 'data',
+                            values: data.filter((datum) => datum !== undefined)
+                            .reduce((result, datum) => result.concat(datum!.data.values), [] as any[])
+                        }
+                    });
+                })
+                .catch((err) => console.error(err));
+        }
+    }
+
+    componentDidMount() {
+        this._updateData();
+    }
+
+    componentDidUpdate(prevProps: QueryVizProps) {
+        if(!equal(this.props.data_indices, prevProps.data_indices)) {
+            this._updateData();
+        }
     }
 
     flip() {
@@ -100,7 +134,8 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
     }
 
     render() {
-        const { state, data, setSpec, exportViz, deleteViz } = this.props;
+        const { state, setSpec, exportViz, deleteViz } = this.props;
+        const { data } = this.state;
         const spec = { ...state.spec, data } as VisualizationSpec;
         console.log(spec);
 
@@ -141,7 +176,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                         <Handle />
                         <span onClick={this.flip.bind(this)}>Configure</span>
                     </div>
-                    {data ? <Vega spec={spec} options={vega_options}/> : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>}
+                    {(data && data.values.length > 0) ? <Vega spec={spec} options={vega_options}/> : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>}
                 </div>
             );
         }
@@ -149,11 +184,21 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
     }
 }
 
+function getDataIndices(state: AppState, code: ReportCode | null, query: QueryMeta | null): number[] | null {
+    if(code && hasReportMeta(state, code) && query) {
+        const indices = state.reports.getIn([code, 'queries', queryKey(query)]);
+        if(indices) {
+            return indices.valueSeq().toArray();
+        }
+    }
+    return null;
+}
+
 const mapState = (state: AppState, { code, guid }: { code: ReportCode | null, guid: Guid }) => {
     const vizState = state.visualizations.get(guid)!;
     return {
         state: vizState,
-        data: (code && hasReportMeta(state, code) && vizState.query) ? queryData(vizState.query, code, state) : undefined,
+        data_indices: getDataIndices(state, code, vizState.query),
     };
 };
 
@@ -162,6 +207,7 @@ const mapDispatch = (dispatch: Dispatch) => {
         setSpec: (guid: Guid, spec: string | object) => dispatch(setVizSpec(guid, spec)),
         deleteViz: (guid: Guid) => dispatch(deleteViz(guid)),
         exportViz: (guid: Guid) => dispatch(exportViz(guid)),
+        clearQueryIndex: (index: number[]) => dispatch(clearQueryIndex(index)),
     };
 }
 
