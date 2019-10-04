@@ -639,7 +639,7 @@ const migrations = {
             }),
         };
     },
-    1: (state: any) => {
+    2: (state: any) => {
         return {
             ...state,
             reports: state.reports.map((report: any) => {
