@@ -38,7 +38,7 @@ export function isVizState(val: any): val is VizState {
 }
 
 export type PendingUpdate = {
-    key: [ReportCode, string, QueryId, number],
+    key: [ReportCode, string, QueryId, string],
     index: number,
 };
 
@@ -256,6 +256,21 @@ interface MergeUpdatesAction {
     type: typeof MERGE_UPDATES,
 }
 
+// query data has been removed by some external force, clear out the
+// stored index
+export const CLEAR_QUERY_INDEX = Symbol("CLEAR_QUERY_INDEX");
+interface ClearQueryIndexAction {
+    type: typeof CLEAR_QUERY_INDEX,
+    indices: number[],
+}
+
+export function clearQueryIndex(indices: number[]): ClearQueryIndexAction {
+    return {
+        type: CLEAR_QUERY_INDEX,
+        indices,
+    };
+}
+
 export function updateQueries(code: ReportCode): ThunkAction<void, AppState, undefined, Action> {
     return function(dispatch, getState) {
         const app_state = getState();
@@ -416,7 +431,7 @@ export function importViz(state: VizState) {
 }
 
 export type MetaActions = RequestReportMetaAction | RetrievedReportMeta | ErrorReportMeta;
-export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction;
+export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction | ClearQueryIndexAction;
 export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | ExportVizAction | CloseExportViewAction | UpdateVizOrderAction;
 export type ImportAction = BeginImportAction | ImportVizAction | CancelImportAction;
 export type DashboardAction = SetApiKeyAction | SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction;
@@ -532,7 +547,7 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                     queries: state.requests.queries.remove([queryKey(action.query), action.code, action.fight])
                 },
                 pending_updates: state.pending_updates.push({ 
-                    key: [action.code, 'queries', queryKey(action.query), action.fight], 
+                    key: [action.code, 'queries', queryKey(action.query), action.fight.toString()], 
                     index: action.index,
                 }),
             };
@@ -589,6 +604,16 @@ function rootReducer(state = initialState, action: DashboardAction): AppState {
                 ...state,
                 visualizations: state.visualizations.set(action.state.guid, action.state),
                 importing: false,
+            };
+        case CLEAR_QUERY_INDEX:
+            return {
+                ...state,
+                reports: state.reports.map((report) => {
+                    return {
+                        ...report,
+                        queries: report.queries.map((q) => q.filterNot((index) => action.indices.includes(index))),
+                    };
+                }),
             };
         default:
             // const dummy: never = action;

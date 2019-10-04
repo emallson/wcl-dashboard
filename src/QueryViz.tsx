@@ -3,7 +3,7 @@ import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
 import { queryKey, getDataById, QueryMeta, QueryVizData, queryDataChanged } from './query';
-import { exportViz, deleteViz, hasReportMeta, ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
+import { clearQueryIndex, exportViz, deleteViz, hasReportMeta, ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
 import QueryBuilder from './QueryBuilder';
 import 'brace';
@@ -21,6 +21,7 @@ type QueryVizProps = {
     setSpec: typeof setVizSpec, 
     deleteViz: typeof deleteViz,
     exportViz: typeof exportViz,
+    clearQueryIndex: typeof clearQueryIndex,
     data_indices: number[] | null
 };
 
@@ -92,13 +93,20 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
     _updateData() {
         if(this.props.data_indices !== null) {
             getDataById(this.props.data_indices)
-                .then((data) => this.setState({
-                    data: {
-                        name: 'data',
-                        values: data.filter((datum) => datum !== undefined)
-                        .reduce((result, datum) => result.concat(datum!.values), [] as any[])
+                .then((data) => {
+                    const present_ids = data.filter(datum => datum !== undefined).map(datum => datum!.id);
+                    const missing_data = this.props.data_indices!.filter(id => !present_ids.includes(id));
+                    if(missing_data.length > 0) {
+                        this.props.clearQueryIndex(missing_data);
                     }
-                }))
+                    this.setState({
+                        data: {
+                            name: 'data',
+                            values: data.filter((datum) => datum !== undefined)
+                            .reduce((result, datum) => result.concat(datum!.data.values), [] as any[])
+                        }
+                    });
+                })
                 .catch((err) => console.error(err));
         }
     }
@@ -126,7 +134,6 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
     }
 
     render() {
-        console.log(this.props);
         const { state, setSpec, exportViz, deleteViz } = this.props;
         const { data } = this.state;
         const spec = { ...state.spec, data } as VisualizationSpec;
@@ -169,7 +176,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                         <Handle />
                         <span onClick={this.flip.bind(this)}>Configure</span>
                     </div>
-                    {data ? <Vega spec={spec} options={vega_options}/> : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>}
+                    {(data && data.values.length > 0) ? <Vega spec={spec} options={vega_options}/> : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>}
                 </div>
             );
         }
@@ -200,6 +207,7 @@ const mapDispatch = (dispatch: Dispatch) => {
         setSpec: (guid: Guid, spec: string | object) => dispatch(setVizSpec(guid, spec)),
         deleteViz: (guid: Guid) => dispatch(deleteViz(guid)),
         exportViz: (guid: Guid) => dispatch(exportViz(guid)),
+        clearQueryIndex: (index: number[]) => dispatch(clearQueryIndex(index)),
     };
 }
 

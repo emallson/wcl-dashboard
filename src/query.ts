@@ -75,8 +75,8 @@ async function loadFightData(report: ReportCode, fight: number | number[], query
     }).toArray();
 }
 
-export async function getDataById(indices: number[]): Promise<(QueryVizData | undefined)[]> {
-    return Promise.all(indices.map((index) => db.records.get(index).then((datum) => datum ? datum.data : datum)));
+export async function getDataById(indices: number[]): Promise<(QueryDataRecord | undefined)[]> {
+    return Promise.all(indices.map((index) => db.records.get(index)));
 }
 
 export async function storeData(report: ReportCode, fight: number, query: QueryMeta, data: QueryVizData): Promise<number> {
