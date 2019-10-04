@@ -84,7 +84,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
         } else if(this.state.data === null && !equal(nextState, this.state)) {
             return true;
         } else if(nextState.data !== null && this.state.data !== null) {
-            return queryDataChanged(nextState.data, this.state.data);
+            return queryDataChanged(nextState.data, this.state.data) || !equal({ ...nextState, data: null }, { ...this.state, data: null });
         }
 
         return !equal({ ...nextState, data: null }, { ...this.state, data: null });
