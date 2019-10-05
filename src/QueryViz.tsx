@@ -81,7 +81,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
     shouldComponentUpdate(nextProps: QueryVizProps, nextState: QueryVizState) {
         if(!equal(nextProps, this.props)) {
             return true;
-        } else if(this.state.data === null && !equal(nextState, this.state)) {
+        } else if((nextState.data === null || this.state.data === null) && !equal(nextState, this.state)) {
             return true;
         } else if(nextState.data !== null && this.state.data !== null) {
             return queryDataChanged(nextState.data, this.state.data) || !equal({ ...nextState, data: null }, { ...this.state, data: null });
@@ -117,6 +117,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
 
     componentDidUpdate(prevProps: QueryVizProps) {
         if(!equal(this.props.data_indices, prevProps.data_indices)) {
+            this.setState({ data: null });
             this._updateData();
         }
     }
