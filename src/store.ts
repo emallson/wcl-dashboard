@@ -11,7 +11,7 @@ import { Guid as GuidCreator } from 'guid-typescript';
 import { Map, OrderedMap, Set, List, Seq } from 'immutable';
 
 import { load_meta, load_query_data } from './request';
-import { QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData } from './query';
+import { QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData, clearDB as clearQueryDB } from './query';
 
 export interface ApiKey extends Newtype<{readonly ApiKey: unique symbol}, string> {}
 
@@ -108,7 +108,7 @@ function emptyReportState(code: ReportCode): ReportState {
     };
 }
 
-const CURRENT_VERSION = 2;
+const CURRENT_VERSION = 3;
 
 const initialState: AppState = {
     version: CURRENT_VERSION,
@@ -649,7 +649,19 @@ const migrations = {
                 };
             })
         };
-    }
+    },
+    3: (state: any) => {
+        clearQueryDB();
+        return {
+            ...state,
+            reports: state.reports.map((report: any) => {
+                return {
+                    ...report,
+                    queries: Map(),
+                };
+            })
+        }
+    },
 };
 
 export default function buildStore() {
