@@ -2,7 +2,7 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
-import { queryKey, getDataById, QueryMeta, QueryVizData, queryDataChanged } from './query';
+import { queryKey, getDataById, QueryMeta, QueryVizData, relevantFights, missingFights, queryDataChanged } from './query';
 import { clearQueryIndex, exportViz, deleteViz, hasReportMeta, ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
 import QueryBuilder from './QueryBuilder';
@@ -187,9 +187,13 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
 
 function getDataIndices(state: AppState, code: ReportCode | null, query: QueryMeta | null): number[] | null {
     if(code && hasReportMeta(state, code) && query) {
+        if(missingFights(query, code, state).length > 0) {
+            return null; // don't show anything if we are missing data
+        }
+        const relevant_fights = relevantFights(query, code, state);
         const indices = state.reports.getIn([code, 'queries', queryKey(query)]);
         if(indices) {
-            return indices.valueSeq().toArray();
+            return indices.filter((_: any, fid: string) => relevant_fights.includes(parseInt(fid))).valueSeq().toArray();
         }
     }
     return null;

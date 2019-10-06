@@ -26,6 +26,11 @@ class QueryDataDB extends Dexie {
 
 const db = new QueryDataDB();
 
+export function clearDB() {
+    // used in migrations
+    db.records.clear();
+}
+
 export enum QueryType { Event = "event", Table = "table" }
 export interface EventQuery {
     kind: typeof QueryType.Event,
@@ -65,8 +70,15 @@ export function isQueryMeta(val: any): val is QueryMeta {
 export interface QueryId extends Newtype<{readonly QueryId: unique symbol}, string> {}
 export const QueryId = prism<QueryId>((_s: string) => true)
 
+function queryKindKey(kind: QueryKind): string {
+    if(kind.kind === QueryType.Event) {
+        return 'event';
+    } else {
+        return `table-${kind.table}`;
+    }
+}
 export function queryKey(query: QueryMeta): QueryId {
-    return toNullable(QueryId.getOption(JSON.stringify(query)))!;
+    return toNullable(QueryId.getOption(`${query.filter}::${queryKindKey(query.kind)}::${query.cutoff}`))!;
 }
 
 async function loadFightData(report: ReportCode, fight: number | number[], query: QueryMeta): Promise<QueryDataRecord[]> {
@@ -102,7 +114,7 @@ export function shouldUpdate(query: QueryMeta, report: ReportCode, state: AppSta
     return false;
 }
 
-function relevantFights(query: QueryMeta, report: ReportCode, state: AppState): number[] {
+export function relevantFights(query: QueryMeta, report: ReportCode, state: AppState): number[] {
     const report_data = state.reports.get(report)!;
     const relevant_fights = report_data.fights
         .filter(({boss}) => boss > 0) // only include boss fights, no trash
