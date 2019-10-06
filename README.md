@@ -15,7 +15,9 @@ N4Ig5grglgJiBcIDMAzAnAUzQVgAxIFoB2ARgEMMClsUUCS1c0CYMAOAFgwyQCZ8SAIxAAaEAGcADhgD
 
 produces this visualization of deaths over an entire log:
 
-![deaths visual](./deaths_visual.png)
+<p align="center">
+<img src="./deaths_visual.png"  width=500 alt="death visualization" />
+</p>
 
 # How do I use this?
 
