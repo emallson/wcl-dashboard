@@ -60,6 +60,14 @@ export type QueryMeta = {
     cutoff?: number,
 }
 
+export function dummyEventMeta(): QueryMeta {
+    return {
+        filter: "",
+        bossid: null,
+        kind: { kind: QueryType.Event },
+    };
+}
+
 export function isQueryMeta(val: any): val is QueryMeta {
     return ('filter' in val && typeof val.filter === 'string' &&
             'bossid' in val && (val.bossid === null || typeof val.bossid === 'string') &&
@@ -126,7 +134,10 @@ export function relevantFights(query: QueryMeta, report: ReportCode, state: AppS
 }
 
 export function missingFights(query: QueryMeta, report: ReportCode, state: AppState): number[] {
-    const report_data = state.reports.get(report)!;
+    const report_data = state.reports.get(report);
+    if(report_data === undefined) {
+        return []; // if there is no report, we don't need any fights
+    }
     const query_data = report_data.queries.get(queryKey(query));
     const relevant_fights = relevantFights(query, report, state);
     if (query_data === undefined) {

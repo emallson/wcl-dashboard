@@ -19,7 +19,7 @@ produces this visualization of deaths over an entire log:
 
 # How do I use this?
 
-Enter your WCL API key (from [here](https://warcraftlogs.com/profile)), then
+Enter your WCL API key (from [here](https://www.warcraftlogs.com/profile)), then
 pick a report.
 
 Data is collected for a [WCL query](https://www.warcraftlogs.com/help/pins),

@@ -110,7 +110,7 @@ function emptyReportState(code: ReportCode): ReportState {
 
 const CURRENT_VERSION = 3;
 
-const initialState: AppState = {
+export const initialState: AppState = {
     version: CURRENT_VERSION,
     api_key: null,
     main_report: null,
@@ -276,7 +276,11 @@ export function updateQueries(code: ReportCode): ThunkAction<void, AppState, und
         const app_state = getState();
         const queries = app_state.visualizations.filter((state) => state.query !== null && shouldUpdateQuery(state.query, code, app_state));
 
-        const report = app_state.reports.get(code)!;
+        const report = app_state.reports.get(code);
+
+        if(report === undefined) {
+            return; // nothing to do, no report data
+        }
 
         queries.valueSeq().forEach(({query}) => {
             const fights = queryFightsMissing(query!, code, app_state);
@@ -457,7 +461,7 @@ function purgeQueries(state: AppState): AppState {
     };
 }
 
-function rootReducer(state = initialState, action: DashboardAction): AppState {
+export function rootReducer(state = initialState, action: DashboardAction): AppState {
     switch(action.type) {
         case SET_API_KEY:
             return {
