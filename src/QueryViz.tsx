@@ -30,6 +30,7 @@ type QueryVizState = {
     menu: boolean;
     specString: string;
     data: QueryVizData | null;
+    renderError: any;
 }
 
 const emSize = Number(getComputedStyle(document.body,null)!.fontSize!.replace(/[^\d]/g, ''));
@@ -75,6 +76,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
             menu: false,
             specString: JSON.stringify(props.state.spec, null, 2),
             data: null,
+            renderError: null,
         };
     }
 
@@ -134,6 +136,10 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
         this.setState({ ...this.state, specString: newValue });
     }
 
+    renderError(error: any) {
+        this.setState({ renderError: error });
+    }
+
     render() {
         const { state, setSpec, exportViz, deleteViz } = this.props;
         const { data } = this.state;
@@ -166,18 +172,30 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                         mode="json"
                     />
                     <input type="button" value="Update" onClick={() => {
+                        this.renderError(null); // clear the error if it exists
                         setSpec(state.guid, this.state.specString);
                     }} />
                 </div>
             );
         } else {
+            const vega = <Vega spec={spec} options={vega_options} renderError={this.renderError.bind(this)} />
+
+            let display = null;
+            if(this.state.renderError) {
+                display = <>
+                    <span style={{margin: '2em', padding: '2em'}}>Unable to render graphic: {this.state.renderError.message}</span>
+                </>;
+            } else {
+                display = 
+                    (data && data.values.length > 0) ? vega : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>;
+            }
             return (
                 <div className="query-viz">
                     <div className="menuBar">
                         <Handle />
                         <span onClick={this.flip.bind(this)}>Configure</span>
                     </div>
-                    {(data && data.values.length > 0) ? <Vega spec={spec} options={vega_options}/> : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>}
+                    {display}
                 </div>
             );
         }

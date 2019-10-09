@@ -7,6 +7,7 @@ type VegaProps = {
     spec: VisualizationSpec,
     options?: EmbedOptions,
     className?: string,
+    renderError: (_: any) => void,
 };
 
 export default class Vega extends React.Component<VegaProps> {
@@ -23,7 +24,7 @@ export default class Vega extends React.Component<VegaProps> {
         if(this.plotRef.current) {
             this.promise = embed(this.plotRef.current, this.props.spec, this.props.options)
                 .then(({ view }) => view)
-                .catch((error) => { console.error(error); return undefined; });
+                .catch((error) => { console.error(error); this.props.renderError(error); return undefined; });
         }
     }
 
