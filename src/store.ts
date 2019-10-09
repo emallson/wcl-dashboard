@@ -1,4 +1,4 @@
-import { Action, createStore, applyMiddleware } from 'redux';
+import { Reducer, Action, createStore, applyMiddleware } from 'redux';
 import thunkMiddleware, { ThunkAction } from 'redux-thunk';
 import { createLogger } from 'redux-logger';
 import { persistStore, persistReducer, createMigrate } from 'redux-persist';
@@ -12,10 +12,13 @@ import { Map, OrderedMap, Set, List, Seq } from 'immutable';
 
 import { load_meta, load_query_data } from './request';
 import { QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData, clearDB as clearQueryDB } from './query';
+import { ClearKeyAction, apiKeyReducer } from './api_key';
 
 export interface ApiKey extends Newtype<{readonly ApiKey: unique symbol}, string> {}
 
 export const ApiKey = prism<ApiKey>((_s: string) => true)
+
+export const toApiKey = (key: string) => toNullable(ApiKey.getOption(key))!;
 
 export interface ReportCode extends Newtype<{readonly ReportCode: unique symbol}, string> {}
 export const ReportCode = prism<ReportCode>((_s: string) => true)
@@ -108,7 +111,7 @@ function emptyReportState(code: ReportCode): ReportState {
     };
 }
 
-const CURRENT_VERSION = 3;
+const CURRENT_VERSION = 4;
 
 export const initialState: AppState = {
     version: CURRENT_VERSION,
@@ -438,7 +441,7 @@ export type MetaActions = RequestReportMetaAction | RetrievedReportMeta | ErrorR
 export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction | ClearQueryIndexAction;
 export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | ExportVizAction | CloseExportViewAction | UpdateVizOrderAction;
 export type ImportAction = BeginImportAction | ImportVizAction | CancelImportAction;
-export type DashboardAction = SetApiKeyAction | SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction;
+export type DashboardAction = SetApiKeyAction | ClearKeyAction | SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction;
 
 const PURGE_CUTOFF_MS = 2.592e8;
 function purgeQueries(state: AppState): AppState {
@@ -461,7 +464,7 @@ function purgeQueries(state: AppState): AppState {
     };
 }
 
-export function rootReducer(state = initialState, action: DashboardAction): AppState {
+function mainReducer(state = initialState, action: DashboardAction): AppState {
     switch(action.type) {
         case SET_API_KEY:
             return {
@@ -626,6 +629,17 @@ export function rootReducer(state = initialState, action: DashboardAction): AppS
     }
 }
 
+function reduceReducers<S, A extends Action>(initialState: S, ...reducers: Reducer<S,A>[]): Reducer<S, A> {
+    return (state: S | undefined, action: A) => {
+        if(state === undefined) {
+            state = initialState;
+        }
+        return reducers.reduce((curState, reducer) => reducer(curState, action), state);
+    };
+}
+
+export const rootReducer = reduceReducers(initialState, mainReducer, apiKeyReducer);
+
 const migrations = {
     0: (state: any) => {
         let index = 0;
@@ -666,6 +680,12 @@ const migrations = {
             })
         }
     },
+    4: (state: any) => {
+        return {
+            ...state,
+            api_key: null
+        };
+    }
 };
 
 export default function buildStore() {
