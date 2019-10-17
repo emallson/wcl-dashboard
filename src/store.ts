@@ -13,6 +13,7 @@ import { Map, OrderedMap, Set, List, Seq } from 'immutable';
 import { load_meta, load_query_data } from './request';
 import { QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData, clearDB as clearQueryDB } from './query';
 import { ClearKeyAction, apiKeyReducer } from './api_key';
+import fixOrderTransform from './fixOrder';
 
 export interface ApiKey extends Newtype<{readonly ApiKey: unique symbol}, string> {}
 
@@ -123,7 +124,7 @@ export const initialState: AppState = {
         queries: Set(),
     },
     errors: List(),
-    visualizations: Map(),
+    visualizations: OrderedMap(),
     pending_updates: List(),
     exporting: null,
     importing: false,
@@ -464,6 +465,29 @@ function purgeQueries(state: AppState): AppState {
     };
 }
 
+function sortReducer(state = initialState, action: DashboardAction): AppState {
+    switch(action.type) {
+        case UPDATE_VIZ_ORDER:
+            const direction = Math.sign(action.oldIndex - action.newIndex);
+            return {
+                ...state,
+                visualizations: state.visualizations.map((viz) => {
+                    if(viz.index < Math.min(action.oldIndex, action.newIndex) || viz.index > Math.max(action.oldIndex, action.newIndex)) {
+                        return viz; // don't need to change anything
+                    } else if (viz.index === action.oldIndex) {
+                        viz.index = action.newIndex;
+                        return viz;
+                    } else {
+                        viz.index += direction;
+                        return viz;
+                    }
+                }).sortBy(a => a.index)
+            };
+        default:
+            return state;
+    }
+}
+
 function mainReducer(state = initialState, action: DashboardAction): AppState {
     switch(action.type) {
         case SET_API_KEY:
@@ -566,25 +590,13 @@ function mainReducer(state = initialState, action: DashboardAction): AppState {
             };
             return purgeQueries(next_state);
         case DELETE_VIZ:
+            let index = 0;
             return {
                 ...state,
-                visualizations: state.visualizations.remove(action.guid),
-            };
-        case UPDATE_VIZ_ORDER:
-            const direction = Math.sign(action.oldIndex - action.newIndex);
-            return {
-                ...state,
-                visualizations: state.visualizations.map((viz) => {
-                    if(viz.index < Math.min(action.oldIndex, action.newIndex) || viz.index > Math.max(action.oldIndex, action.newIndex)) {
-                        return viz; // don't need to change anything
-                    } else if (viz.index === action.oldIndex) {
-                        viz.index = action.newIndex;
-                        return viz;
-                    } else {
-                        viz.index += direction;
-                        return viz;
-                    }
-                }).sort((a, b) => a.index - b.index)
+                visualizations: state.visualizations.remove(action.guid).map(viz => {
+                    viz.index = index++;
+                    return viz;
+                }),
             };
         case EXPORT_VIZ:
             return {
@@ -638,7 +650,7 @@ function reduceReducers<S, A extends Action>(initialState: S, ...reducers: Reduc
     };
 }
 
-export const rootReducer = reduceReducers(initialState, mainReducer, apiKeyReducer);
+export const rootReducer = reduceReducers(initialState, mainReducer, apiKeyReducer, sortReducer);
 
 const migrations = {
     0: (state: any) => {
@@ -694,7 +706,7 @@ export default function buildStore() {
         version: CURRENT_VERSION,
         storage,
         blacklist: ['requests', 'errors', 'pending_updates', 'exporting', 'importing'],
-        transforms: [immutableTransform()],
+        transforms: [fixOrderTransform(), immutableTransform()],
         migrate: createMigrate(migrations, {debug: true}),
     };
 
