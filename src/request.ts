@@ -1,4 +1,4 @@
-import 'cross-fetch';
+import fetch from 'cross-fetch';
 import { ApiKey, ReportCode, FightMeta } from './store';
 import { QueryMeta, QueryType } from './query';
 import queryString from 'query-string';
@@ -53,6 +53,39 @@ export async function load_query_data(key: ApiKey, code: ReportCode, fight: Figh
     console.log(url);
 
     const res = await fetch(url);
+
+    const body = await res.json();
+    if (res.status >= 300) {
+        throw new Error(`error response from the server: ${JSON.stringify(body)}`);
+    }
+
+    return body;
+}
+
+const PROXY_HOST = "";
+
+export async function proxy_meta(code: ReportCode) {
+    const res = await fetch(`${PROXY_HOST}/api/v1/proxy/meta/${code}`);
+
+    const body = await res.json();
+    if (res.status >= 300) {
+        throw new Error(`error response from the server: ${JSON.stringify(body)}`);
+    }
+
+    return body;
+}
+
+export async function proxy_query_data(code: ReportCode, fight: FightMeta, query: QueryMeta) {
+    const res = await fetch(`${PROXY_HOST}/api/v1/proxy/query`, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            code, fight, query
+        }),
+    });
 
     const body = await res.json();
     if (res.status >= 300) {

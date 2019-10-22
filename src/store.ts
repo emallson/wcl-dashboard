@@ -10,9 +10,8 @@ import { toNullable } from 'fp-ts/lib/Option';
 import { Guid as GuidCreator } from 'guid-typescript';
 import { Map, OrderedMap, Set, List, Seq } from 'immutable';
 
-import { load_meta, load_query_data } from './request';
+import { proxy_meta, proxy_query_data } from './request';
 import { QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData, clearDB as clearQueryDB } from './query';
-import { ClearKeyAction, apiKeyReducer } from './api_key';
 import fixOrderTransform from './fixOrder';
 
 export interface ApiKey extends Newtype<{readonly ApiKey: unique symbol}, string> {}
@@ -23,6 +22,7 @@ export const toApiKey = (key: string) => toNullable(ApiKey.getOption(key))!;
 
 export interface ReportCode extends Newtype<{readonly ReportCode: unique symbol}, string> {}
 export const ReportCode = prism<ReportCode>((_s: string) => true)
+export const toReportCode = (code: string) => toNullable(ReportCode.getOption(code))!;
 
 export interface Guid extends Newtype<{readonly Guid: unique symbol}, string> {}
 export const Guid = prism<Guid>(GuidCreator.isGuid);
@@ -48,7 +48,6 @@ export type PendingUpdate = {
 
 export type AppState = {
     version: number,
-    api_key: ApiKey | null,
     main_report: ReportCode | null,
     reports: Map<ReportCode, ReportState>,
     requests: {
@@ -112,11 +111,10 @@ function emptyReportState(code: ReportCode): ReportState {
     };
 }
 
-const CURRENT_VERSION = 4;
+const CURRENT_VERSION = 5;
 
 export const initialState: AppState = {
     version: CURRENT_VERSION,
-    api_key: null,
     main_report: null,
     reports: Map(),
     requests: {
@@ -134,26 +132,6 @@ export function bossList(reports: Seq.Indexed<ReportState>): Map<number, string>
     return reports.reduce((bosses, report: ReportState) => {
         return report.fights.filter(({ boss }) => boss > 0).reduce((bosses: Map<number, string>, fight: FightMeta) => bosses.set(fight.boss, fight.name), bosses);
     }, Map());
-}
-
-export const SET_API_KEY = Symbol("SET_API_KEY");
-interface SetApiKeyAction {
-    type: typeof SET_API_KEY
-    key: ApiKey
-}
-
-export function setApiKey(key: string | ApiKey) {
-    if (typeof key === 'string') {
-        return {
-            type: SET_API_KEY,
-            key: toNullable(ApiKey.getOption(key))!,
-        };
-    } else {
-        return {
-            type: SET_API_KEY,
-            key,
-        };
-    }
 }
 
 export const SET_MAIN_REPORT = Symbol("SET_MAIN_REPORT");
@@ -202,7 +180,7 @@ export function requestMeta(code: ReportCode): ThunkAction<void, AppState, undef
             code,
         });
 
-        load_meta(getStore().api_key!, code)
+        proxy_meta(code)
             .then(body => dispatch({
                 type: RETRIEVED_REPORT_META,
                 code, body,
@@ -298,7 +276,7 @@ export function updateQueries(code: ReportCode): ThunkAction<void, AppState, und
             });
 
             Promise.all(fights.map(fight => {
-                return load_query_data(app_state.api_key!, code, report.fights.find(({ id }) => id === fight)!, query!)
+                return proxy_query_data(code, report.fights.find(({ id }) => id === fight)!, query!)
                     .then(body => {
                         const data = queryFormatData(code, fight, query!, body, app_state);
                         return storeData(code, fight, query!, data);
@@ -442,7 +420,7 @@ export type MetaActions = RequestReportMetaAction | RetrievedReportMeta | ErrorR
 export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction | ClearQueryIndexAction;
 export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | ExportVizAction | CloseExportViewAction | UpdateVizOrderAction;
 export type ImportAction = BeginImportAction | ImportVizAction | CancelImportAction;
-export type DashboardAction = SetApiKeyAction | ClearKeyAction | SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction;
+export type DashboardAction = SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction;
 
 const PURGE_CUTOFF_MS = 2.592e8;
 function purgeQueries(state: AppState): AppState {
@@ -490,11 +468,6 @@ function sortReducer(state = initialState, action: DashboardAction): AppState {
 
 function mainReducer(state = initialState, action: DashboardAction): AppState {
     switch(action.type) {
-        case SET_API_KEY:
-            return {
-                ...state,
-                api_key: action.key,
-            };
         case SET_MAIN_REPORT:
             const updatedReports = state.main_report ?
                 state.reports.update(state.main_report, (report) => { 
@@ -650,7 +623,7 @@ function reduceReducers<S, A extends Action>(initialState: S, ...reducers: Reduc
     };
 }
 
-export const rootReducer = reduceReducers(initialState, mainReducer, apiKeyReducer, sortReducer);
+export const rootReducer = reduceReducers(initialState, mainReducer, sortReducer);
 
 const migrations = {
     0: (state: any) => {
@@ -697,6 +670,10 @@ const migrations = {
             ...state,
             api_key: null
         };
+    },
+    5: (state: any) => {
+        delete state.api_key;
+        return state;
     }
 };
 

@@ -7,7 +7,6 @@ import { Guid, ReportCode, ApiKey, AppState, setMainReport, updateReport, BEGIN_
 import ExportView from './ExportView';
 import ImportView from './ImportView';
 import QueryList from './QueryList';
-import DemandApiKey from './DemandApiKey';
 
 const MainReportCode: React.FC<{ code: ReportCode | null, setMainReport: typeof setMainReport, updateReport: typeof updateReport }> = ({ code, setMainReport, updateReport }) => {
     return (
@@ -20,7 +19,6 @@ const MainReportCode: React.FC<{ code: ReportCode | null, setMainReport: typeof 
 }
 
 type Props = {
-    api_key: ApiKey | null,
     code: ReportCode | null,
     setMainReport: typeof setMainReport,
     updateReport: typeof updateReport,
@@ -30,19 +28,15 @@ type Props = {
 };
 
 const InnerApp: React.FC<Props> = (props) => {
-    if (props.api_key === null) {
-        return <DemandApiKey />;
-    } else {
-        return (
-            <>
-                <MainReportCode code={props.code} setMainReport={props.setMainReport} updateReport={props.updateReport} />
-                <QueryList />
-                { props.exporting ? <ExportView guid={props.exporting} /> : null }
-                { props.importing ? <ImportView /> : null }
-                <button id="btn-import" onClick={props.beginImport}>Import</button>
-            </>
-        );
-    }
+    return (
+        <>
+            <MainReportCode code={props.code} setMainReport={props.setMainReport} updateReport={props.updateReport} />
+            <QueryList />
+            { props.exporting ? <ExportView guid={props.exporting} /> : null }
+            { props.importing ? <ImportView /> : null }
+            <button id="btn-import" onClick={props.beginImport}>Import</button>
+        </>
+    );
 };
 
 function mapDispatchToProps(dispatch: Dispatch) {
@@ -55,7 +49,6 @@ function mapDispatchToProps(dispatch: Dispatch) {
 
 function mapStateToProps(state: AppState) {
     return { 
-        api_key: state.api_key,
         code: state.main_report, 
         exporting: state.exporting,
         importing: state.importing,

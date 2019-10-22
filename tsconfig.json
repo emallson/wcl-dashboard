@@ -22,5 +22,8 @@
   "include": [
     "src",
     "typings"
+  ],
+  "exclude": [
+    "src/server.ts"
   ]
 }
