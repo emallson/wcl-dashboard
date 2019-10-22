@@ -21,9 +21,12 @@ produces this visualization of deaths over an entire log:
 
 # How do I use this?
 
-Data is collected for a [WCL query](https://www.warcraftlogs.com/help/pins),
-then displayed according to
-a [Vega-Lite](https://vega.github.io/vega-lite/examples/) (or [Vega](https://vega.github.io/vega/examples/), if you're crazy) spec.
+1. Create (or copy) a visualization.
+2. Write a [WCL query](https://www.warcraftlogs.com/help/pins) to collect data.
+3. Write a [Vega-Lite](https://vega.github.io/vega-lite/examples/) (or
+   [Vega](https://vega.github.io/vega/examples/), if you're crazy) spec to
+   define the display. After you change the spec, hit the `Update` button.
+4. View your new figure! (Repeat as needed to tune the damned thing)
 
 # Limitations
 
