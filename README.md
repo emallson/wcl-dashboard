@@ -21,9 +21,6 @@ produces this visualization of deaths over an entire log:
 
 # How do I use this?
 
-Enter your WCL API key (from [here](https://www.warcraftlogs.com/profile); you **must** set an Application Name if you haven't used the API before!), then
-pick a report.
-
 Data is collected for a [WCL query](https://www.warcraftlogs.com/help/pins),
 then displayed according to
 a [Vega-Lite](https://vega.github.io/vega-lite/examples/) (or [Vega](https://vega.github.io/vega/examples/), if you're crazy) spec.
@@ -40,6 +37,9 @@ a [Vega-Lite](https://vega.github.io/vega-lite/examples/) (or [Vega](https://veg
 # Contributing
 
 I am not currently accepting contributions. Check again later.
+
+If you want to run a local copy, you need to set the `API_KEY` environment
+variable to your API key (or put it in a `.env` file as `API_KEY=whatever`).
 
 # License
 
