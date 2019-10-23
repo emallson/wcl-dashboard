@@ -2,7 +2,8 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
-import { ReportCode, Guid, AppState, createViz, updateVizOrder } from './store';
+import { ReportCode, Guid, AppState } from './store';
+import { createViz, updateVizOrder  } from './store/visualization';
 import QueryViz from './QueryViz';
 import { SortableContainer } from "react-sortable-hoc";
 

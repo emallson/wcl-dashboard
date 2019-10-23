@@ -10,9 +10,10 @@ import { toNullable } from 'fp-ts/lib/Option';
 import { Guid as GuidCreator } from 'guid-typescript';
 import { Map, OrderedMap, Set, List, Seq } from 'immutable';
 
-import { proxy_meta, proxy_query_data } from './request';
-import { QueryId, QueryMeta, queryKey, queryFormatData, createQueryMeta, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData, clearDB as clearQueryDB } from './query';
-import fixOrderTransform from './fixOrder';
+import { proxy_meta, proxy_query_data } from '../request';
+import { QueryId, QueryMeta, queryKey, queryFormatData, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData, clearDB as clearQueryDB } from '../query';
+import fixOrderTransform from '../fixOrder';
+import { reducer as vizReducer, VizList, VizState, VizAction } from './visualization';
 
 export interface ApiKey extends Newtype<{readonly ApiKey: unique symbol}, string> {}
 
@@ -26,13 +27,7 @@ export const toReportCode = (code: string) => toNullable(ReportCode.getOption(co
 
 export interface Guid extends Newtype<{readonly Guid: unique symbol}, string> {}
 export const Guid = prism<Guid>(GuidCreator.isGuid);
-
-export type VizState = {
-    guid: Guid,
-    spec: object,
-    index: number,
-    query: QueryMeta | null,
-}
+export const createGuid = () => toNullable(Guid.getOption(GuidCreator.create().toString()))!;
 
 export function isVizState(val: any): val is VizState {
     return ('guid' in val && GuidCreator.isGuid(val.guid) &&
@@ -55,7 +50,7 @@ export type AppState = {
         queries: Set<[QueryId, ReportCode, number]>,
     },
     errors: List<any>,
-    visualizations: OrderedMap<Guid, VizState>,
+    visualizations: VizList,
     pending_updates: List<PendingUpdate>,
     exporting: Guid | null,
     importing: boolean,
@@ -299,82 +294,6 @@ export function updateQueries(code: ReportCode): ThunkAction<void, AppState, und
     }
 }
 
-export const CREATE_VIZ = Symbol("CREATE_VIZ");
-interface CreateVizAction {
-    type: typeof CREATE_VIZ
-}
-
-export function createViz() {
-    return {
-        type: CREATE_VIZ,
-    };
-}
-
-export const SET_VIZ_SPEC = Symbol("SET_VIZ_SPEC");
-interface SetVizSpecAction {
-    type: typeof SET_VIZ_SPEC
-    spec: object,
-    guid: Guid
-}
-
-export function setVizSpec(guid: Guid, spec: string | object) {
-    if(typeof spec === 'string') {
-        return {
-            type: SET_VIZ_SPEC,
-            guid,
-            spec: JSON.parse(spec),
-        };
-    } else {
-        return {
-            type: SET_VIZ_SPEC,
-            guid, spec
-        };
-    }
-}
-
-export const SET_VIZ_QUERY = Symbol("SET_VIZ_QUERY");
-interface SetVizQueryAction {
-    type: typeof SET_VIZ_QUERY,
-    guid: Guid,
-    query: QueryMeta,
-}
-
-export function setVizQuery(guid: Guid, kind: string, table: string | null, filter: string, bossid: string | null, cutoff: number | undefined) {
-    return {
-        type: SET_VIZ_QUERY,
-        guid: guid,
-        query: createQueryMeta(kind, table, filter, bossid, cutoff),
-    };
-}
-
-export const DELETE_VIZ = Symbol("DELETE_VIZ");
-interface DeleteVizAction {
-    type: typeof DELETE_VIZ,
-    guid: Guid,
-}
-
-export function deleteViz(guid: Guid) {
-    return {
-        type: DELETE_VIZ,
-        guid,
-    };
-}
-
-export const UPDATE_VIZ_ORDER = Symbol("UPDATE_VIZ_ORDER");
-interface UpdateVizOrderAction {
-    type: typeof UPDATE_VIZ_ORDER,
-    guid: Guid,
-    oldIndex: number,
-    newIndex: number,
-}
-
-export function updateVizOrder(guid: Guid, oldIndex: number, newIndex: number) {
-    return {
-        type: UPDATE_VIZ_ORDER,
-        guid, oldIndex, newIndex
-    };
-}
-
 export const EXPORT_VIZ = Symbol("EXPORT_VIZ");
 interface ExportVizAction {
     type: typeof EXPORT_VIZ,
@@ -418,9 +337,9 @@ export function importViz(state: VizState) {
 
 export type MetaActions = RequestReportMetaAction | RetrievedReportMeta | ErrorReportMeta;
 export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction | ClearQueryIndexAction;
-export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | ExportVizAction | CloseExportViewAction | UpdateVizOrderAction;
 export type ImportAction = BeginImportAction | ImportVizAction | CancelImportAction;
-export type DashboardAction = SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction;
+export type ExportAction = ExportVizAction | CloseExportViewAction;
+export type DashboardAction = SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction | ExportAction;
 
 const PURGE_CUTOFF_MS = 2.592e8;
 function purgeQueries(state: AppState): AppState {
@@ -443,29 +362,6 @@ function purgeQueries(state: AppState): AppState {
     };
 }
 
-function sortReducer(state = initialState, action: DashboardAction): AppState {
-    switch(action.type) {
-        case UPDATE_VIZ_ORDER:
-            const direction = Math.sign(action.oldIndex - action.newIndex);
-            return {
-                ...state,
-                visualizations: state.visualizations.map((viz) => {
-                    if(viz.index < Math.min(action.oldIndex, action.newIndex) || viz.index > Math.max(action.oldIndex, action.newIndex)) {
-                        return viz; // don't need to change anything
-                    } else if (viz.index === action.oldIndex) {
-                        viz.index = action.newIndex;
-                        return viz;
-                    } else {
-                        viz.index += direction;
-                        return viz;
-                    }
-                }).sortBy(a => a.index)
-            };
-        default:
-            return state;
-    }
-}
-
 function mainReducer(state = initialState, action: DashboardAction): AppState {
     switch(action.type) {
         case SET_MAIN_REPORT:
@@ -481,29 +377,6 @@ function mainReducer(state = initialState, action: DashboardAction): AppState {
                 reports: updatedReports,
                 main_report: action.code,
             }
-        case CREATE_VIZ:
-            const guid = toNullable(Guid.getOption(GuidCreator.create().toString()))!;
-            return {
-                ...state,
-                visualizations: state.visualizations.set(guid, {
-                    guid,
-                    spec: {},
-                    query: null, 
-                    index: state.visualizations.count(),
-                })
-            };
-        case SET_VIZ_SPEC:
-            return {
-                ...state,
-                visualizations: state.visualizations.update(action.guid, value => {
-                    return { ...value, spec: action.spec };
-                })
-            };
-        case SET_VIZ_QUERY:
-            return {
-                ...state,
-                visualizations: state.visualizations.updateIn([action.guid, 'query'], () => action.query),
-            };
         case REQUEST_REPORT_META:
             return {
                 ...state,
@@ -562,15 +435,6 @@ function mainReducer(state = initialState, action: DashboardAction): AppState {
                 reports: state.pending_updates.reduce((reports, { key, index }) => reports.setIn(key, index), state.reports),
             };
             return purgeQueries(next_state);
-        case DELETE_VIZ:
-            let index = 0;
-            return {
-                ...state,
-                visualizations: state.visualizations.remove(action.guid).map(viz => {
-                    viz.index = index++;
-                    return viz;
-                }),
-            };
         case EXPORT_VIZ:
             return {
                 ...state,
@@ -623,7 +487,14 @@ function reduceReducers<S, A extends Action>(initialState: S, ...reducers: Reduc
     };
 }
 
-export const rootReducer = reduceReducers(initialState, mainReducer, sortReducer);
+function vizReducerWrapper(state: AppState = initialState, action: DashboardAction): AppState {
+    return {
+        ...state,
+        visualizations: vizReducer(state.visualizations, action),
+    };
+}
+
+export const rootReducer = reduceReducers(initialState, mainReducer, vizReducerWrapper);
 
 const migrations = {
     0: (state: any) => {

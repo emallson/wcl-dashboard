@@ -3,7 +3,8 @@ import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { decompressFromBase64 } from 'lz-string';
 
-import { VizState, AppState, importViz, isVizState, CANCEL_IMPORT } from './store';
+import { AppState, importViz, isVizState, CANCEL_IMPORT } from './store';
+import { VizState } from './store/visualization';
 
 import './ExportView.scss';
 

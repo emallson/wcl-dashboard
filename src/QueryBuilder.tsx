@@ -3,7 +3,8 @@ import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
 import { QueryMeta, QueryType, TableKind } from './query';
-import { Guid, AppState, setVizQuery, bossList } from './store';
+import { Guid, AppState, bossList } from './store';
+import { setVizQuery } from './store/visualization';
 import { Map } from 'immutable';
 
 import './QueryBuilder.scss';

@@ -3,7 +3,8 @@ import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
 import { queryKey, getDataById, QueryMeta, QueryVizData, relevantFights, missingFights, queryDataChanged } from './query';
-import { clearQueryIndex, exportViz, deleteViz, hasReportMeta, ReportCode, VizState, Guid, AppState, setVizSpec, } from './store';
+import { clearQueryIndex, exportViz, hasReportMeta, ReportCode, Guid, AppState, } from './store';
+import { deleteViz, VizState, setVizSpec } from './store/visualization';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
 import QueryBuilder from './QueryBuilder';
 import 'brace';
