@@ -4,6 +4,7 @@ import { connect } from 'react-redux';
 import './App.css';
 import { Guid, ReportCode, ApiKey, AppState, setMainReport, updateReport, BEGIN_IMPORT } from './store';
 
+import { MenuBar } from './Sidebar';
 import ExportView from './ExportView';
 import ImportView from './ImportView';
 import QueryList from './QueryList';
@@ -12,7 +13,6 @@ const MainReportCode: React.FC<{ code: ReportCode | null, setMainReport: typeof 
     return (
         <div className="main-report-code-container">
             <span>Report Code: </span>
-            <input type="text" defaultValue={code ? code.toString() : ''} onChange={(e) => setMainReport(e.target.value)} />
             <input type="button" style={{marginLeft: '1em'}} value="Fetch New Fights" onClick={code ? () => updateReport(code) : () => {}} />
         </div>
     );
@@ -30,11 +30,10 @@ type Props = {
 const InnerApp: React.FC<Props> = (props) => {
     return (
         <>
-            <MainReportCode code={props.code} setMainReport={props.setMainReport} updateReport={props.updateReport} />
+            <MenuBar />
             <QueryList />
             { props.exporting ? <ExportView guid={props.exporting} /> : null }
             { props.importing ? <ImportView /> : null }
-            <button id="btn-import" onClick={props.beginImport}>Import</button>
         </>
     );
 };

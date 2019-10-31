@@ -76,6 +76,8 @@ export type ReportState = {
     friendlies: ActorMeta[],
     enemies: ActorMeta[],
     queries: Map<QueryId, Map<string, number>>
+    start?: number,
+    title?: string,
 };
 
 export function lookupActor(report: ReportState, id: number): ActorMeta | undefined {

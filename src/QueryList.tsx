@@ -3,23 +3,21 @@ import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
 import { ReportCode, Guid, AppState } from './store';
-import { createViz, updateVizOrder  } from './store/visualization';
+import { updateVizOrder  } from './store/visualization';
 import QueryViz from './QueryViz';
 import { SortableContainer } from "react-sortable-hoc";
 
 type QueryListProps = {
     code: ReportCode | null,
     guids: Guid[],
-    create: typeof createViz,
 }
 
-const Queries: React.FC<QueryListProps> = ({ code, guids, create }) => {
+const Queries: React.FC<QueryListProps> = ({ code, guids }) => {
     return (
         <div className="query-container">
             <div className="query-list">
                 {guids.map((guid, index) => <QueryViz index={index} key={guid.toString()} guid={guid} code={code} />)}
             </div>
-            <input type="button" value="Create" onClick={create} />
         </div>
     );
 }
@@ -35,7 +33,6 @@ const mapState = (state: AppState) => {
 
 const mapDispatch = (dispatch: Dispatch) => {
     return {
-        create: () => dispatch(createViz()),
         updateOrder: (guid: Guid, oldIndex: number, newIndex: number) => dispatch(updateVizOrder(guid, oldIndex, newIndex)),
     };
 };
