@@ -12,6 +12,7 @@ import 'brace/mode/json';
 import 'brace/theme/solarized_light';
 import AceEditor from 'react-ace';
 import { SortableHandle, SortableElement } from 'react-sortable-hoc';
+import GridLoader from 'react-spinners/GridLoader';
 import equal from 'fast-deep-equal';
 
 import './QueryViz.scss';
@@ -24,6 +25,7 @@ type QueryVizProps = {
     exportViz: typeof exportViz,
     clearQueryIndex: typeof clearQueryIndex,
     data_indices: number[] | null
+    external_load: boolean,
 };
 
 type QueryVizState = {
@@ -32,6 +34,7 @@ type QueryVizState = {
     specString: string;
     data: QueryVizData | null;
     renderError: any;
+    loading: boolean;
 }
 
 const emSize = Number(getComputedStyle(document.body,null)!.fontSize!.replace(/[^\d]/g, ''));
@@ -67,7 +70,6 @@ const Handle = SortableHandle(() => {
 });
 
 class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
-    static whyDidYouRender = true;
 
     constructor(props: QueryVizProps) {
         super(props);
@@ -78,6 +80,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
             specString: JSON.stringify(props.state.spec, null, 2),
             data: null,
             renderError: null,
+            loading: false,
         };
     }
 
@@ -95,6 +98,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
 
     _updateData() {
         if(this.props.data_indices !== null) {
+            this.setState({ loading: true });
             getDataById(this.props.data_indices)
                 .then((data) => {
                     const present_ids = data.filter(datum => datum !== undefined).map(datum => datum!.id);
@@ -103,6 +107,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                         this.props.clearQueryIndex(missing_data);
                     }
                     this.setState({
+                        loading: false,
                         data: {
                             name: 'data',
                             values: data.filter((datum) => datum !== undefined)
@@ -110,7 +115,10 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                         }
                     });
                 })
-                .catch((err) => console.error(err));
+                .catch((err) => {
+                    console.error(err)
+                    this.setState({ loading: false });
+                });
         }
     }
 
@@ -196,6 +204,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                         <Handle />
                         <span onClick={this.flip.bind(this)}>Configure</span>
                     </div>
+                    <GridLoader css="margin: 1em auto;" color="#657b83" loading={this.state.loading || this.props.external_load} />
                     {display}
                 </div>
             );
@@ -223,6 +232,7 @@ const mapState = (state: AppState, { code, guid }: { code: ReportCode | null, gu
     return {
         state: vizState,
         data_indices: getDataIndices(state, code, vizState.query),
+        external_load: !!vizState.query && !!state.requests.queries.find((val) => val.includes(queryKey(vizState.query!).toString())),
     };
 };
 

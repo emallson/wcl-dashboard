@@ -24,10 +24,6 @@ export async function load_meta(key: ApiKey, code: ReportCode) {
     const res = await fetch(url);
 
     const body = await res.json();
-    if (res.status >= 300) {
-        throw new Error(`error response from the server: ${JSON.stringify(body)}`);
-    }
-
     return body;
 }
 
@@ -55,10 +51,6 @@ export async function load_query_data(key: ApiKey, code: ReportCode, fight: Figh
     const res = await fetch(url);
 
     const body = await res.json();
-    if (res.status >= 300) {
-        throw new Error(`error response from the server: ${JSON.stringify(body)}`);
-    }
-
     return body;
 }
 
@@ -69,7 +61,7 @@ export async function proxy_meta(code: ReportCode) {
 
     const body = await res.json();
     if (res.status >= 300) {
-        throw new Error(`error response from the server: ${JSON.stringify(body)}`);
+        throw new Error(body.error);
     }
 
     return body;
@@ -89,7 +81,7 @@ export async function proxy_query_data(code: ReportCode, fight: FightMeta, query
 
     const body = await res.json();
     if (res.status >= 300) {
-        throw new Error(`error response from the server: ${JSON.stringify(body)}`);
+        throw new Error(body.error);
     }
 
     return body;

@@ -1,6 +1,9 @@
 import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
+import 'react-toastify/dist/ReactToastify.min.css';
+import { ToastContainer } from 'react-toastify';
+
 import './App.css';
 import { Guid, ReportCode, ApiKey, AppState, setMainReport, updateReport, BEGIN_IMPORT } from './store';
 
@@ -30,6 +33,11 @@ type Props = {
 const InnerApp: React.FC<Props> = (props) => {
     return (
         <>
+            <ToastContainer
+                position="top-right"
+                bodyClassName="toast-text"
+                autoClose={10000}
+            />
             <MenuBar />
             <QueryList />
             { props.exporting ? <ExportView guid={props.exporting} /> : null }

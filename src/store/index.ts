@@ -10,6 +10,7 @@ import { toNullable } from 'fp-ts/lib/Option';
 import { Guid as GuidCreator } from 'guid-typescript';
 import { Map, OrderedMap, Set, List, Seq } from 'immutable';
 
+import { notify_error } from '../notify';
 import { proxy_meta, proxy_query_data } from '../request';
 import { QueryId, QueryMeta, queryKey, queryFormatData, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData, clearDB as clearQueryDB } from '../query';
 import fixOrderTransform from '../fixOrder';
@@ -47,9 +48,8 @@ export type AppState = {
     reports: Map<ReportCode, ReportState>,
     requests: {
         meta: Set<ReportCode>,
-        queries: Set<[QueryId, ReportCode, number]>,
+        queries: Set<string>,
     },
-    errors: List<any>,
     visualizations: VizList,
     pending_updates: List<PendingUpdate>,
     exporting: Guid | null,
@@ -118,7 +118,6 @@ export const initialState: AppState = {
         meta: Set(),
         queries: Set(),
     },
-    errors: List(),
     visualizations: OrderedMap(),
     pending_updates: List(),
     exporting: null,
@@ -210,6 +209,10 @@ interface UpdateQueryAction {
     code: ReportCode,
     query: QueryMeta,
     fights: number[]
+}
+
+export function updateQueryKey(code: ReportCode, meta: QueryMeta, fight: number) {
+    return `${code.toString()}__${queryKey(meta)}__${fight}`;
 }
 
 export const RETRIEVED_UPDATE_QUERY = Symbol("RETRIEVED_UPDATE_QUERY");
@@ -401,29 +404,38 @@ function mainReducer(state = initialState, action: DashboardAction): AppState {
                 ),
             };
         case ERROR_REPORT_META:
+            notify_error(`Failed to retrieve fight list: ${action.message}`);
             return {
                 ...state,
                 requests: {
                     ...state.requests,
                     meta: state.requests.meta.remove(action.code),
-                },
-                errors: state.errors.push(action.message),
+                }
             };
-        case ERROR_UPDATE_QUERY:
+        case UPDATE_QUERY:
+            const queries = action.fights.reduce((q, fight) => q.add(updateQueryKey(action.code, action.query, fight)), state.requests.queries);
             return {
                 ...state,
                 requests: {
                     ...state.requests,
-                    queries: state.requests.queries.remove([queryKey(action.query), action.code, action.fight])
-                },
-                errors: state.errors.push(action.body),
+                    queries
+                }
+            };
+        case ERROR_UPDATE_QUERY:
+            notify_error(`Failed to retrieve query (${action.query.filter}) result: ${action.body}`);
+            return {
+                ...state,
+                requests: {
+                    ...state.requests,
+                    queries: state.requests.queries.delete(updateQueryKey(action.code, action.query, action.fight))
+                }
             };
         case RETRIEVED_UPDATE_QUERY:
             return {
                 ...state,
                 requests: {
                     ...state.requests,
-                    queries: state.requests.queries.remove([queryKey(action.query), action.code, action.fight])
+                    queries: state.requests.queries.delete(updateQueryKey(action.code, action.query, action.fight))
                 },
                 pending_updates: state.pending_updates.push({ 
                     key: [action.code, 'queries', queryKey(action.query), action.fight.toString()], 
@@ -555,7 +567,7 @@ export default function buildStore() {
         key: 'root',
         version: CURRENT_VERSION,
         storage,
-        blacklist: ['requests', 'errors', 'pending_updates', 'exporting', 'importing'],
+        blacklist: ['requests', 'pending_updates', 'exporting', 'importing'],
         transforms: [fixOrderTransform(), immutableTransform()],
         migrate: createMigrate(migrations, {debug: true}),
     };
@@ -572,3 +584,4 @@ export default function buildStore() {
         persistor: persistStore(store),
     };
 }
+

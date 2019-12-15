@@ -10,3 +10,7 @@
     align-items: flex-start;
     align-content: flex-start;
 }
+
+.toast-text {
+    color: #fff;
+}

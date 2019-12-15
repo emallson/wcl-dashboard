@@ -13,6 +13,7 @@ import { plus as add } from 'react-icons-kit/entypo/plus';
 import { BEGIN_IMPORT, toReportCode, setMainReport, updateReport, ReportCode, AppState } from './store';
 import { createViz } from './store/visualization';
 
+
 import './Sidebar.scss';
 
 type MenuBarProps = {
