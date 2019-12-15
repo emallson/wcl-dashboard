@@ -17,7 +17,7 @@ type QueryBuilderProps = {
 };
 
 const DEFAULT_VALUE = 'Query Type';
-const QueryBuilder: React.FC<QueryBuilderProps> = ({ guid, meta, setVizQuery, bosses }) => {
+export const QueryBuilder: React.FC<QueryBuilderProps> = ({ guid, meta, setVizQuery, bosses }) => {
     const tableKind = (meta: QueryMeta | null) => (meta && meta.kind.kind === QueryType.Table) ? meta.kind.table : null;
     const bossSelector = meta ? (
         <>
