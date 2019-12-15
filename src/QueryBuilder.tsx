@@ -27,6 +27,7 @@ const QueryBuilder: React.FC<QueryBuilderProps> = ({ guid, meta, setVizQuery, bo
             }}>
             <option value={'null'}>Any</option>
             {bosses.map((name, bossid) => <option key={String(bossid)} value={String(bossid)}>{name}</option>).valueSeq().toJS()}
+            {(meta.bossid && !bosses.has(Number(meta.bossid))) ? <option key={meta.bossid} value={meta.bossid}>Unknown ({meta.bossid})</option> : null}
         </select>
     </>
     ) : null;
