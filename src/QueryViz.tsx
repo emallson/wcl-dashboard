@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dispatch } from 'redux';
-import { connect } from 'react-redux';
+import { connect, useSelector } from 'react-redux';
 
 import { queryKey, getDataById, QueryMeta, QueryVizData, relevantFights, missingFights, queryDataChanged } from './query';
 import { clearQueryIndex, exportViz, hasReportMeta, ReportCode, Guid, AppState, } from './store';
@@ -68,6 +68,31 @@ const Handle = SortableHandle(() => {
         <span className="grippy" style={{marginRight: 8}}></span>
     );
 });
+
+const QueryView: React.FC<{data: any, spec: any, loading: boolean, flip: () => void}> = ({data, spec, loading, flip}) => {
+    const [renderError, setRenderError] = useState<any>(null);
+    const vega = <Vega spec={spec} options={vega_options} renderError={setRenderError} />
+
+    let display = null;
+    if(renderError) {
+        display = <>
+            <span style={{margin: '2em', padding: '2em'}}>Unable to render graphic: {renderError!.message}</span>
+        </>;
+    } else {
+        display = 
+            (data && data.values.length > 0) ? vega : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>;
+    }
+    return (
+        <>
+            <div className="menuBar">
+                <Handle />
+                <span onClick={flip}>Configure</span>
+            </div>
+            <GridLoader css="margin: 1em auto;" color="#657b83" loading={loading} />
+            {display}
+        </>
+    );
+};
 
 class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
 
@@ -187,25 +212,9 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
                 </div>
             );
         } else {
-            const vega = <Vega spec={spec} options={vega_options} renderError={this.renderError.bind(this)} />
-
-            let display = null;
-            if(this.state.renderError) {
-                display = <>
-                    <span style={{margin: '2em', padding: '2em'}}>Unable to render graphic: {this.state.renderError.message}</span>
-                </>;
-            } else {
-                display = 
-                    (data && data.values.length > 0) ? vega : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>;
-            }
             return (
                 <div className="query-viz">
-                    <div className="menuBar">
-                        <Handle />
-                        <span onClick={this.flip.bind(this)}>Configure</span>
-                    </div>
-                    <GridLoader css="margin: 1em auto;" color="#657b83" loading={this.state.loading || this.props.external_load} />
-                    {display}
+                    <QueryView data={data} spec={spec} loading={this.state.loading || this.props.external_load} flip={this.flip.bind(this)} />
                 </div>
             );
         }
