@@ -99,8 +99,12 @@ export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction |
 export function reducer(state = initialVizList, action: DashboardAction): VizList {
     switch(action.type) {
         case UPDATE_VIZ_ORDER:
+            let idx = 0;
+            state.forEach(a => { a.index = idx++ });
+            const next = state.sortBy(a => a.index);
+
             const direction = Math.sign(action.oldIndex - action.newIndex);
-            return state.map((viz) => {
+            return next.map((viz) => {
                 if(viz.index < Math.min(action.oldIndex, action.newIndex) || viz.index > Math.max(action.oldIndex, action.newIndex)) {
                     return viz; // don't need to change anything
                 } else if (viz.index === action.oldIndex) {

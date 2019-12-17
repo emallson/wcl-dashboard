@@ -13,7 +13,6 @@ import { Map, OrderedMap, Set, List, Seq } from 'immutable';
 import { notify_error } from '../notify';
 import { proxy_meta, proxy_query_data } from '../request';
 import { QueryId, QueryMeta, queryKey, queryFormatData, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData, clearDB as clearQueryDB } from '../query';
-import fixOrderTransform from '../fixOrder';
 import { reducer as vizReducer, VizList, VizState, VizAction } from './visualization';
 
 export interface ApiKey extends Newtype<{readonly ApiKey: unique symbol}, string> {}
@@ -568,7 +567,7 @@ export default function buildStore() {
         version: CURRENT_VERSION,
         storage,
         blacklist: ['requests', 'pending_updates', 'exporting', 'importing'],
-        transforms: [fixOrderTransform(), immutableTransform()],
+        transforms: [immutableTransform()],
         migrate: createMigrate(migrations, {debug: true}),
     };
 
