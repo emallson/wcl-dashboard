@@ -89,7 +89,20 @@ export function updateVizOrder(guid: Guid, oldIndex: number, newIndex: number) {
     };
 }
 
-export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | UpdateVizOrderAction;
+export const DUPLICATE_VIZ = Symbol("DUPLICATE_VIZ");
+interface DuplicateVizAction {
+    type: typeof DUPLICATE_VIZ,
+    guid: Guid
+}
+
+export function duplicateViz(guid: Guid) {
+    return {
+        type: DUPLICATE_VIZ,
+        guid
+    };
+}
+
+export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | UpdateVizOrderAction | DuplicateVizAction;
 
 export function reducer(state = initialVizList, action: DashboardAction): VizList {
     switch(action.type) {
@@ -120,6 +133,11 @@ export function reducer(state = initialVizList, action: DashboardAction): VizLis
             });
         case SET_VIZ_QUERY:
             return state.updateIn([action.guid, 'query'], () => action.query);
+        case DUPLICATE_VIZ:
+            const viz = state.get(action.guid)!;
+            const copy: VizState = JSON.parse(JSON.stringify(viz));
+            copy.guid = createGuid();
+            return state.set(copy.guid, copy);
         case DELETE_VIZ:
             let index = 0;
                 return state.remove(action.guid).map(viz => {
