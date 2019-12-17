@@ -4,7 +4,7 @@ import { Guid, createGuid, DashboardAction } from './index';
 
 export type VizState = {
     guid: Guid,
-    spec: object,
+    spec: any,
     index: number,
     query: QueryMeta | null,
 }

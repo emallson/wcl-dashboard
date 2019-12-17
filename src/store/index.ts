@@ -14,6 +14,7 @@ import { notify_error } from '../notify';
 import { proxy_meta, proxy_query_data } from '../request';
 import { QueryId, QueryMeta, queryKey, queryFormatData, shouldUpdate as shouldUpdateQuery, missingFights as queryFightsMissing, isQueryMeta, storeData, clearDB as clearQueryDB } from '../query';
 import { reducer as vizReducer, VizList, VizState, VizAction } from './visualization';
+import { reducer as bulkExportReducer, BulkExportAction } from './bulk_export';
 
 export interface ApiKey extends Newtype<{readonly ApiKey: unique symbol}, string> {}
 
@@ -343,7 +344,7 @@ export type MetaActions = RequestReportMetaAction | RetrievedReportMeta | ErrorR
 export type QueryAction = UpdateQueryAction | RetrievedUpdateQueryAction | ErrorUpdateQueryAction | MergeUpdatesAction | ClearQueryIndexAction;
 export type ImportAction = BeginImportAction | ImportVizAction | CancelImportAction;
 export type ExportAction = ExportVizAction | CloseExportViewAction;
-export type DashboardAction = SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction | ExportAction;
+export type DashboardAction = SetMainReportAction | MetaActions | VizAction | QueryAction | ImportAction | ExportAction | BulkExportAction;
 
 const PURGE_CUTOFF_MS = 2.592e8;
 function purgeQueries(state: AppState): AppState {
@@ -507,7 +508,14 @@ function vizReducerWrapper(state: AppState = initialState, action: DashboardActi
     };
 }
 
-export const rootReducer = reduceReducers(initialState, mainReducer, vizReducerWrapper);
+const bulkWrapper = (state: AppState = initialState, action: DashboardAction) => {
+    return {
+        ...state,
+        visualizations: bulkExportReducer(state.visualizations, action),
+    };
+};
+
+export const rootReducer = reduceReducers(initialState, mainReducer, vizReducerWrapper, bulkWrapper);
 
 const migrations = {
     0: (state: any) => {

@@ -1,41 +1,27 @@
 import React from 'react';
-import { Dispatch } from 'redux';
-import { connect } from 'react-redux';
-import { compressToBase64 } from 'lz-string';
-
+import { useSelector, useDispatch } from 'react-redux';
 import { Guid, AppState, CLOSE_EXPORT_VIEW } from './store';
-import { VizState } from './store/visualization';
+import { export_view } from './store/bulk_export';
 
 import './ExportView.scss';
 
 type ExportViewProps = {
-    state: VizState,
-    closeExportView: () => void,
+    guid: Guid,
 }
 
-const ExportView: React.FC<ExportViewProps> = ({ state, closeExportView }) => {
-    const value = compressToBase64(JSON.stringify(state));
+const ExportView: React.FC<ExportViewProps> = ({ guid }) => {
+    const state = useSelector((state: AppState) => state.visualizations.get(guid)!);
+    const dispatch = useDispatch();
+    const value = export_view(state);
     return (
         <>
             <div id="export-background-block" />
             <div id="export-view">
                 <textarea value={value} readOnly cols={80} rows={8} /><br/>
-                <button onClick={closeExportView} >OK</button>
+                <button onClick={() => dispatch({ type: CLOSE_EXPORT_VIEW })} >OK</button>
             </div>
         </>
     );
 };
 
-function mapState(state: AppState, { guid }: { guid: Guid }) {
-    return {
-        state: state.visualizations.get(guid)!,
-    };
-}
-
-function mapDispatch(dispatch: Dispatch) {
-    return {
-        closeExportView: () => dispatch({ type: CLOSE_EXPORT_VIEW }),
-    };
-}
-
-export default connect(mapState, mapDispatch)(ExportView);
+export default ExportView;

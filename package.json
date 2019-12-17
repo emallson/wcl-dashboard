@@ -5,6 +5,7 @@
   "proxy": "http://localhost:8000/",
   "dependencies": {
     "@types/debounce": "^1.2.0",
+    "@types/file-saver": "^2.0.1",
     "@types/jest": "^24.0.18",
     "@types/koa": "^2.0.51",
     "@types/koa-bodyparser": "^4.3.0",
@@ -33,6 +34,7 @@
     "dexie": "^2.0.4",
     "dotenv": "^8.2.0",
     "fast-deep-equal": "^2.0.1",
+    "file-saver": "^2.0.2",
     "fp-ts": "^2.0.3",
     "guid-typescript": "^1.0.9",
     "immutable": "^4.0.0-rc.12",

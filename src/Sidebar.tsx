@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { connect } from 'react-redux';
+import { connect, useDispatch } from 'react-redux';
 import { Dispatch } from 'redux';
 import { debounce } from 'debounce';
 
@@ -12,6 +12,7 @@ import { plus as add } from 'react-icons-kit/entypo/plus';
 
 import { BEGIN_IMPORT, toReportCode, setMainReport, updateReport, ReportCode, AppState } from './store';
 import { createViz } from './store/visualization';
+import { bulkExport } from './store/bulk_export';
 
 
 import './Sidebar.scss';
@@ -127,6 +128,8 @@ const ReportInput: React.FC<{
 };
 
 const _SideBar: React.FC<SideBarProps> = (props) => {
+    const dispatch = useDispatch();
+
     const reportItems = 
         props.reports.map((report) => {
             return (
@@ -146,6 +149,9 @@ const _SideBar: React.FC<SideBarProps> = (props) => {
                 updateReport={props.updateReport}
                 setMainReport={props.setMainReport}
                 closeSidebar={props.closeSidebar} />
+            <div style={{margin: 5, marginLeft: 10}}>
+                <span onClick={() => dispatch(bulkExport())}><em>Export All</em></span>
+            </div>
         </div>
     )
 };
