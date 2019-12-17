@@ -127,7 +127,7 @@ export function relevantFights(query: QueryMeta, report: ReportCode, state: AppS
     const relevant_fights = report_data.fights
         .filter(({boss}) => boss > 0) // only include boss fights, no trash
         .filter(({boss}) => query.bossid === null || String(boss) === query.bossid)
-        // .filter(({id}) => !state.requests.queries.contains(updateQueryKey(report, query, id)))
+        .filter(({id}) => !state.requests.queries.contains(updateQueryKey(report, query, id)))
         .map(({id}) => id);
     return relevant_fights;
 }

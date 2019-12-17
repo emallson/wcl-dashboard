@@ -5,21 +5,12 @@ import 'react-toastify/dist/ReactToastify.min.css';
 import { ToastContainer } from 'react-toastify';
 
 import './App.css';
-import { Guid, ReportCode, ApiKey, AppState, setMainReport, updateReport, BEGIN_IMPORT } from './store';
+import { Guid, ReportCode, AppState, setMainReport, updateReport, BEGIN_IMPORT } from './store';
 
 import { MenuBar } from './Sidebar';
 import ExportView from './ExportView';
 import ImportView from './ImportView';
 import QueryList from './QueryList';
-
-const MainReportCode: React.FC<{ code: ReportCode | null, setMainReport: typeof setMainReport, updateReport: typeof updateReport }> = ({ code, setMainReport, updateReport }) => {
-    return (
-        <div className="main-report-code-container">
-            <span>Report Code: </span>
-            <input type="button" style={{marginLeft: '1em'}} value="Fetch New Fights" onClick={code ? () => updateReport(code) : () => {}} />
-        </div>
-    );
-}
 
 type Props = {
     code: ReportCode | null,
