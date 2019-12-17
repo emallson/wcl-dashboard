@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dispatch } from 'redux';
-import { connect } from 'react-redux';
+import { connect, useDispatch } from 'react-redux';
 
 import { queryKey, getDataById, QueryMeta, QueryVizData, relevantFights, missingFights, queryDataChanged } from './query';
 import { clearQueryIndex, exportViz, hasReportMeta, ReportCode, Guid, AppState, } from './store';
-import { deleteViz, VizState, setVizSpec } from './store/visualization';
+import { duplicateViz, deleteViz, VizState, setVizSpec } from './store/visualization';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
 import QueryBuilder from './QueryBuilder';
 import 'brace';
@@ -14,15 +14,13 @@ import AceEditor from 'react-ace';
 import { SortableHandle, SortableElement } from 'react-sortable-hoc';
 import GridLoader from 'react-spinners/GridLoader';
 import equal from 'fast-deep-equal';
+import { notify_error } from './notify';
 
 import './QueryViz.scss';
 import './grip.css';
 
 type QueryVizProps = { 
     state: VizState, 
-    setSpec: typeof setVizSpec, 
-    deleteViz: typeof deleteViz,
-    exportViz: typeof exportViz,
     clearQueryIndex: typeof clearQueryIndex,
     data_indices: number[] | null
     external_load: boolean,
@@ -30,10 +28,7 @@ type QueryVizProps = {
 
 type QueryVizState = {
     flipped: boolean;
-    menu: boolean;
-    specString: string;
     data: QueryVizData | null;
-    renderError: any;
     loading: boolean;
 }
 
@@ -69,6 +64,78 @@ const Handle = SortableHandle(() => {
     );
 });
 
+const QueryView: React.FC<{data: any, spec: any, loading: boolean, flip: () => void}> = ({data, spec, loading, flip}) => {
+    const [renderError, setRenderError] = useState<any>(null);
+    const vega = <Vega spec={spec} options={vega_options} renderError={setRenderError} />
+
+    let display = null;
+    if(renderError) {
+        display = <>
+            <span style={{margin: '2em', padding: '2em'}}>Unable to render graphic: {renderError!.message}</span>
+        </>;
+    } else {
+        display = 
+            (data && data.values.length > 0) ? vega : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>;
+    }
+    return (
+        <>
+            <div className="menuBar">
+                <Handle />
+                <span onClick={flip}>Configure</span>
+            </div>
+            <GridLoader css="margin: 1em auto;" color="#657b83" loading={loading} />
+            {display}
+        </>
+    );
+};
+
+const safeSetSpec = (guid: Guid, spec: string, dispatch: Dispatch) => {
+    try {
+        dispatch(setVizSpec(guid, JSON.parse(spec)));
+        return true;
+    } catch(err) {
+        notify_error(err.message);
+        return false;
+    }
+}
+
+const QueryEditor: React.FC<{flip: () => void, state: VizState}> = ({flip, state}) => {
+    const [menuVisible, setMenuVisible] = useState(false);
+    const [specString, setSpecString] = useState(JSON.stringify(state.spec, null, 2));
+    const dispatch = useDispatch();
+
+    return (
+        <>
+            <div className="menuBar">
+                <Handle />
+                <span onClick={() => { safeSetSpec(state.guid, specString, dispatch) && flip() }}>View</span>
+                <div className="dropdown">
+                    <div onClick={() => setMenuVisible(!menuVisible)}>...</div>
+                    { menuVisible ?
+                        (
+                            <div className="dropdown-content">
+                                <div onClick={() => { dispatch(duplicateViz(state.guid)); setMenuVisible(false); }}>Copy</div>
+                                <div onClick={() => { dispatch(exportViz(state.guid)); setMenuVisible(false); }}>Export</div>
+                                <div onClick={() => dispatch(deleteViz(state.guid))}>Delete</div>
+                            </div>
+                    ) : null }
+                </div>
+            </div>
+            <QueryBuilder guid={state.guid} />
+            <AceEditor
+                value={specString} 
+                onChange={setSpecString}
+                tabSize={2}
+                theme="solarized_light"
+                mode="json"
+            />
+            <input type="button" value="Update" onClick={() => {
+                safeSetSpec(state.guid, specString, dispatch);
+            }} />
+        </>
+    );
+};
+
 class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
 
     constructor(props: QueryVizProps) {
@@ -76,10 +143,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
 
         this.state = { 
             flipped: false,
-            menu: false,
-            specString: JSON.stringify(props.state.spec, null, 2),
             data: null,
-            renderError: null,
             loading: false,
         };
     }
@@ -134,23 +198,11 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
     }
 
     flip() {
-        this.setState({ ...this.state, flipped: !this.state.flipped });
-    }
-
-    menu() {
-        this.setState({ menu: !this.state.menu });
-    }
-
-    updateNextSpec(newValue: string) {
-        this.setState({ ...this.state, specString: newValue });
-    }
-
-    renderError(error: any) {
-        this.setState({ renderError: error });
+        this.setState({ flipped: !this.state.flipped });
     }
 
     render() {
-        const { state, setSpec, exportViz, deleteViz } = this.props;
+        const { state } = this.props;
         const { data } = this.state;
         const spec = { ...state.spec, data } as VisualizationSpec;
         console.log(spec);
@@ -158,54 +210,13 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
         if(this.state.flipped) {
             return (
                 <div className="query-viz">
-                    <div className="menuBar">
-                        <Handle />
-                        <span onClick={this.flip.bind(this)}>View</span>
-                        <div className="dropdown">
-                            <div onClick={this.menu.bind(this)}>...</div>
-                            { this.state.menu ?
-                                (
-                                    <div className="dropdown-content">
-                                        <div onClick={() => { exportViz(state.guid); this.menu(); }}>Export</div>
-                                        <div onClick={() => deleteViz(state.guid)}>Delete</div>
-                                    </div>
-                            ) : null }
-                        </div>
-                    </div>
-                    <QueryBuilder guid={state.guid} />
-                    <AceEditor
-                        value={this.state.specString} 
-                        onChange={this.updateNextSpec.bind(this)}
-                        tabSize={2}
-                        theme="solarized_light"
-                        mode="json"
-                    />
-                    <input type="button" value="Update" onClick={() => {
-                        this.renderError(null); // clear the error if it exists
-                        setSpec(state.guid, this.state.specString);
-                    }} />
+                    <QueryEditor flip={this.flip.bind(this)} state={state} />
                 </div>
             );
         } else {
-            const vega = <Vega spec={spec} options={vega_options} renderError={this.renderError.bind(this)} />
-
-            let display = null;
-            if(this.state.renderError) {
-                display = <>
-                    <span style={{margin: '2em', padding: '2em'}}>Unable to render graphic: {this.state.renderError.message}</span>
-                </>;
-            } else {
-                display = 
-                    (data && data.values.length > 0) ? vega : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>;
-            }
             return (
                 <div className="query-viz">
-                    <div className="menuBar">
-                        <Handle />
-                        <span onClick={this.flip.bind(this)}>Configure</span>
-                    </div>
-                    <GridLoader css="margin: 1em auto;" color="#657b83" loading={this.state.loading || this.props.external_load} />
-                    {display}
+                    <QueryView data={data} spec={spec} loading={this.state.loading || this.props.external_load} flip={this.flip.bind(this)} />
                 </div>
             );
         }
@@ -238,9 +249,6 @@ const mapState = (state: AppState, { code, guid }: { code: ReportCode | null, gu
 
 const mapDispatch = (dispatch: Dispatch) => {
     return {
-        setSpec: (guid: Guid, spec: string | object) => dispatch(setVizSpec(guid, spec)),
-        deleteViz: (guid: Guid) => dispatch(deleteViz(guid)),
-        exportViz: (guid: Guid) => dispatch(exportViz(guid)),
         clearQueryIndex: (index: number[]) => dispatch(clearQueryIndex(index)),
     };
 }

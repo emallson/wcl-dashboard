@@ -31,19 +31,11 @@ interface SetVizSpecAction {
     guid: Guid
 }
 
-export function setVizSpec(guid: Guid, spec: string | object) {
-    if(typeof spec === 'string') {
-        return {
-            type: SET_VIZ_SPEC,
-            guid,
-            spec: JSON.parse(spec),
-        };
-    } else {
-        return {
-            type: SET_VIZ_SPEC,
-            guid, spec
-        };
-    }
+export function setVizSpec(guid: Guid, spec: object) {
+    return {
+        type: SET_VIZ_SPEC,
+        guid, spec
+    };
 }
 
 export const SET_VIZ_QUERY = Symbol("SET_VIZ_QUERY");
@@ -89,13 +81,30 @@ export function updateVizOrder(guid: Guid, oldIndex: number, newIndex: number) {
     };
 }
 
-export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | UpdateVizOrderAction;
+export const DUPLICATE_VIZ = Symbol("DUPLICATE_VIZ");
+interface DuplicateVizAction {
+    type: typeof DUPLICATE_VIZ,
+    guid: Guid
+}
+
+export function duplicateViz(guid: Guid) {
+    return {
+        type: DUPLICATE_VIZ,
+        guid
+    };
+}
+
+export type VizAction = CreateVizAction | SetVizSpecAction | SetVizQueryAction | DeleteVizAction | UpdateVizOrderAction | DuplicateVizAction;
 
 export function reducer(state = initialVizList, action: DashboardAction): VizList {
     switch(action.type) {
         case UPDATE_VIZ_ORDER:
+            let idx = 0;
+            state.forEach(a => { a.index = idx++ });
+            const next = state.sortBy(a => a.index);
+
             const direction = Math.sign(action.oldIndex - action.newIndex);
-            return state.map((viz) => {
+            return next.map((viz) => {
                 if(viz.index < Math.min(action.oldIndex, action.newIndex) || viz.index > Math.max(action.oldIndex, action.newIndex)) {
                     return viz; // don't need to change anything
                 } else if (viz.index === action.oldIndex) {
@@ -120,6 +129,11 @@ export function reducer(state = initialVizList, action: DashboardAction): VizLis
             });
         case SET_VIZ_QUERY:
             return state.updateIn([action.guid, 'query'], () => action.query);
+        case DUPLICATE_VIZ:
+            const viz = state.get(action.guid)!;
+            const copy: VizState = JSON.parse(JSON.stringify(viz));
+            copy.guid = createGuid();
+            return state.set(copy.guid, copy);
         case DELETE_VIZ:
             let index = 0;
                 return state.remove(action.guid).map(viz => {
