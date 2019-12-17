@@ -31,19 +31,11 @@ interface SetVizSpecAction {
     guid: Guid
 }
 
-export function setVizSpec(guid: Guid, spec: string | object) {
-    if(typeof spec === 'string') {
-        return {
-            type: SET_VIZ_SPEC,
-            guid,
-            spec: JSON.parse(spec),
-        };
-    } else {
-        return {
-            type: SET_VIZ_SPEC,
-            guid, spec
-        };
-    }
+export function setVizSpec(guid: Guid, spec: object) {
+    return {
+        type: SET_VIZ_SPEC,
+        guid, spec
+    };
 }
 
 export const SET_VIZ_QUERY = Symbol("SET_VIZ_QUERY");

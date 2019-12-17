@@ -14,6 +14,7 @@ import AceEditor from 'react-ace';
 import { SortableHandle, SortableElement } from 'react-sortable-hoc';
 import GridLoader from 'react-spinners/GridLoader';
 import equal from 'fast-deep-equal';
+import { notify_error } from './notify';
 
 import './QueryViz.scss';
 import './grip.css';
@@ -88,6 +89,16 @@ const QueryView: React.FC<{data: any, spec: any, loading: boolean, flip: () => v
     );
 };
 
+const safeSetSpec = (guid: Guid, spec: string, dispatch: Dispatch) => {
+    try {
+        dispatch(setVizSpec(guid, JSON.parse(spec)));
+        return true;
+    } catch(err) {
+        notify_error(err.message);
+        return false;
+    }
+}
+
 const QueryEditor: React.FC<{flip: () => void, state: VizState}> = ({flip, state}) => {
     const [menuVisible, setMenuVisible] = useState(false);
     const [specString, setSpecString] = useState(JSON.stringify(state.spec, null, 2));
@@ -97,7 +108,7 @@ const QueryEditor: React.FC<{flip: () => void, state: VizState}> = ({flip, state
         <>
             <div className="menuBar">
                 <Handle />
-                <span onClick={flip}>View</span>
+                <span onClick={() => { safeSetSpec(state.guid, specString, dispatch) && flip() }}>View</span>
                 <div className="dropdown">
                     <div onClick={() => setMenuVisible(!menuVisible)}>...</div>
                     { menuVisible ?
@@ -119,7 +130,7 @@ const QueryEditor: React.FC<{flip: () => void, state: VizState}> = ({flip, state
                 mode="json"
             />
             <input type="button" value="Update" onClick={() => {
-                dispatch(setVizSpec(state.guid, specString));
+                safeSetSpec(state.guid, specString, dispatch);
             }} />
         </>
     );
