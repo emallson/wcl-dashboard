@@ -5,6 +5,9 @@ cache: yarn
 jobs:
   include:
     - stage: test
+      name: "test"
       script: yarn test
     - script: yarn lint
+      name: "lint"
     - script: yarn pretty-check
+      name: "prettier"
