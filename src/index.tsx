@@ -10,9 +10,16 @@ import * as serviceWorker from './serviceWorker';
 
 // whyDidYouRender(React);
 
-const { store, persistor } = buildStore()
+const { store, persistor } = buildStore();
 
-ReactDOM.render(<Provider store={store}><PersistGate persistor={persistor}><App /></PersistGate></Provider>, document.getElementById('root'));
+ReactDOM.render(
+  <Provider store={store}>
+    <PersistGate persistor={persistor}>
+      <App />
+    </PersistGate>
+  </Provider>,
+  document.getElementById('root')
+);
 
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.
