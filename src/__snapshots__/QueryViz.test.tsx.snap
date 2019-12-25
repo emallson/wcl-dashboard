@@ -1,0 +1,221 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`QueryView renders correctly when loading 1`] = `
+Array [
+  <div
+    className="menuBar"
+  >
+    <span
+      className="grippy"
+      style={
+        Object {
+          "marginRight": 8,
+        }
+      }
+    />
+    <span
+      onClick={[Function]}
+    >
+      Configure
+    </span>
+  </div>,
+  <div
+    style={
+      Object {
+        "textAlign": "center",
+      }
+    }
+  >
+    <span
+      style={
+        Object {
+          "color": "black",
+          "display": "inline-block",
+          "fontFamily": "Linux Libertine",
+          "fontSize": "1.2em",
+          "fontWeight": 700,
+          "paddingBottom": "0.5em",
+          "paddingTop": "0.5em",
+        }
+      }
+    >
+      Testing, Dummy
+    </span>
+    <br />
+    <span
+      style={
+        Object {
+          "margin": "2em",
+        }
+      }
+    >
+      Loading data...
+    </span>
+  </div>,
+]
+`;
+
+exports[`QueryView renders correctly when no data is relevant 1`] = `
+Array [
+  <div
+    className="menuBar"
+  >
+    <span
+      className="grippy"
+      style={
+        Object {
+          "marginRight": 8,
+        }
+      }
+    />
+    <span
+      onClick={[Function]}
+    >
+      Configure
+    </span>
+  </div>,
+  <div
+    style={
+      Object {
+        "textAlign": "center",
+      }
+    }
+  >
+    <span
+      style={
+        Object {
+          "color": "black",
+          "display": "inline-block",
+          "fontFamily": "Linux Libertine",
+          "fontSize": "1.2em",
+          "fontWeight": 700,
+          "paddingBottom": "0.5em",
+          "paddingTop": "0.5em",
+        }
+      }
+    >
+      Testing, Dummy
+    </span>
+    <br />
+    <span
+      style={
+        Object {
+          "margin": "2em",
+        }
+      }
+    >
+      No Relevant Data in Log
+    </span>
+  </div>,
+]
+`;
+
+exports[`QueryView renders correctly with some data 1`] = `
+Array [
+  <div
+    className="menuBar"
+  >
+    <span
+      className="grippy"
+      style={
+        Object {
+          "marginRight": 8,
+        }
+      }
+    />
+    <span
+      onClick={[Function]}
+    >
+      Configure
+    </span>
+  </div>,
+  <div
+    style={
+      Object {
+        "textAlign": "center",
+      }
+    }
+  >
+    <span
+      style={
+        Object {
+          "color": "black",
+          "display": "inline-block",
+          "fontFamily": "Linux Libertine",
+          "fontSize": "1.2em",
+          "fontWeight": 700,
+          "paddingBottom": "0.5em",
+          "paddingTop": "0.5em",
+        }
+      }
+    >
+      Testing, Dummy
+    </span>
+    <br />
+    <span
+      style={
+        Object {
+          "margin": "2em",
+        }
+      }
+    >
+      No Relevant Data in Log
+    </span>
+  </div>,
+]
+`;
+
+exports[`QueryView renders correctly without data 1`] = `
+Array [
+  <div
+    className="menuBar"
+  >
+    <span
+      className="grippy"
+      style={
+        Object {
+          "marginRight": 8,
+        }
+      }
+    />
+    <span
+      onClick={[Function]}
+    >
+      Configure
+    </span>
+  </div>,
+  <div
+    style={
+      Object {
+        "textAlign": "center",
+      }
+    }
+  >
+    <span
+      style={
+        Object {
+          "color": "black",
+          "display": "inline-block",
+          "fontFamily": "Linux Libertine",
+          "fontSize": "1.2em",
+          "fontWeight": 700,
+          "paddingBottom": "0.5em",
+          "paddingTop": "0.5em",
+        }
+      }
+    >
+      Testing, Dummy
+    </span>
+    <br />
+    <span
+      style={
+        Object {
+          "margin": "2em",
+        }
+      }
+    >
+      Missing Data
+    </span>
+  </div>,
+]
+`;

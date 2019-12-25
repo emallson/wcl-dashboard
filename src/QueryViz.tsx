@@ -64,27 +64,47 @@ const Handle = SortableHandle(() => {
     );
 });
 
-const QueryView: React.FC<{data: any, spec: any, loading: boolean, flip: () => void}> = ({data, spec, loading, flip}) => {
+const view_msg_style =  { margin: "2em" };
+const title_style = { 
+    fontSize: "1.2em",  
+    fontWeight: 700,
+    fontFamily: "Linux Libertine",
+    color: "black",
+    display: 'inline-block',
+    paddingTop: "0.5em",
+    paddingBottom: "0.5em",
+};
+
+export const QueryView: React.FC<{data: any, spec: any, loading: boolean, flip: () => void}> = ({data, spec, loading, flip}) => {
     const [renderError, setRenderError] = useState<any>(null);
-    const vega = <Vega spec={spec} options={vega_options} renderError={setRenderError} />
+    const vega = <Vega spec={spec} options={vega_options} renderError={setRenderError} />;
 
     let display = null;
     if(renderError) {
         display = <>
-            <span style={{margin: '2em', padding: '2em'}}>Unable to render graphic: {renderError!.message}</span>
+            <span style={view_msg_style}>Unable to render graphic: {renderError!.message}</span>
         </>;
+    } else if(loading) {
+        display = <span style={view_msg_style}>Loading data...</span>;
+    } else if(!data) {
+        display = <span style={view_msg_style}>Missing Data</span>;
+    } else if(data.values.length === 0) {
+        display = <span style={view_msg_style}>No Relevant Data in Log</span>;
     } else {
-        display = 
-            (data && data.values.length > 0) ? vega : <span style={{margin: '2em', padding: '2em'}}>Missing Data</span>;
+        display = vega;
     }
+
     return (
         <>
             <div className="menuBar">
                 <Handle />
                 <span onClick={flip}>Configure</span>
             </div>
-            <GridLoader css="margin: 1em auto;" color="#657b83" loading={loading} />
-            {display}
+            <div style={{textAlign: "center"}}>
+                {(display === vega || spec.title === undefined) ? null : <><span style={title_style}>{spec.title}</span><br /></>}
+                {(process.env.JEST_WORKER_ID !== undefined) ? null : <GridLoader css="margin: 1em auto;" color="#657b83" loading={loading} />}
+                {display}
+            </div>
         </>
     );
 };
@@ -99,7 +119,7 @@ const safeSetSpec = (guid: Guid, spec: string, dispatch: Dispatch) => {
     }
 }
 
-const QueryEditor: React.FC<{flip: () => void, state: VizState}> = ({flip, state}) => {
+export const QueryEditor: React.FC<{flip: () => void, state: VizState}> = ({flip, state}) => {
     const [menuVisible, setMenuVisible] = useState(false);
     const [specString, setSpecString] = useState(JSON.stringify(state.spec, null, 2));
     const dispatch = useDispatch();
