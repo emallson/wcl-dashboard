@@ -75,9 +75,16 @@ const title_style = {
     paddingBottom: "0.5em",
 };
 
+const defaultSpec = {
+  background: "#fdf6e3",
+};
+
 export const QueryView: React.FC<{data: any, spec: any, loading: boolean, flip: () => void}> = ({data, spec, loading, flip}) => {
     const [renderError, setRenderError] = useState<any>(null);
-    const vega = <Vega spec={spec} options={vega_options} renderError={setRenderError} />;
+    const vega = <Vega spec={{
+        ...defaultSpec,
+        ...spec
+    }} options={vega_options} renderError={setRenderError} />;
 
     let display = null;
     if(renderError) {
