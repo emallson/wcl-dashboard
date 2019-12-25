@@ -13,6 +13,7 @@ import { plus as add } from 'react-icons-kit/entypo/plus';
 import { BEGIN_IMPORT, toReportCode, setMainReport, updateReport, ReportCode, AppState } from './store';
 import { createViz } from './store/visualization';
 import { bulkExport } from './store/bulk_export';
+import  parse  from 'url-parse';
 
 
 import './Sidebar.scss';
@@ -106,12 +107,18 @@ const ReportEntry: React.FC<ReportEntryProps> = (props) => {
     );
 }
 
+export const parseCode = (code: string): string => {
+    const path = parse(code, "https://www.warcraftlogs.com/reports/");
+    return path.pathname.split('/')[2];
+};
+
 const ReportInput: React.FC<{ 
     setMainReport: (code: string) => void,
     updateReport: (code: string) => void,
     closeSidebar: () => void
 }> = ({ updateReport, setMainReport, closeSidebar })=> {
-    const handler = debounce((code: string) => {
+    const handler = debounce((originalCode: string) => {
+        const code = parseCode(originalCode);
         setMainReport(code);
         updateReport(code);
         closeSidebar();
