@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { Icon } from 'react-icons-kit';
 import { SectionId } from './store/section';
 import { AppState } from './store';
@@ -73,7 +73,6 @@ export const SectionContainer = (props: {
 };
 
 const Section = ({ guid }: { guid: SectionId }) => {
-    const dispatch = useDispatch();
     const section = useSelector((state: AppState) => state.sections.get(guid)!);
 
     const views = section.contents.toArray().map((vid, index) => {

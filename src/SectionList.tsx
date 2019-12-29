@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React from 'react';
+import { useSelector } from 'react-redux';
 import { AppState } from './store';
 import Section from './Section';
 
 const SectionList = () => {
-    const dispatch = useDispatch();
     const sections = useSelector((state: AppState) =>
         state.sections.keySeq().toArray()
     );
