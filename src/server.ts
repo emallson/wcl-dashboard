@@ -13,7 +13,7 @@ import { QueryMeta } from './query';
 import { load_meta, load_query_data } from './request';
 
 if (process.env.NODE_ENV === 'development') {
-  config();
+    config();
 }
 
 const app = new Koa();
@@ -32,30 +32,30 @@ app.use(json());
 const router = new Router();
 
 interface ProxyRequest {
-  code: ReportCode;
-  query: QueryMeta;
-  fight: FightMeta;
+    code: ReportCode;
+    query: QueryMeta;
+    fight: FightMeta;
 }
 
 router.post('/api/v1/proxy/query', async (ctx, next) => {
-  const req: ProxyRequest = ctx.request.body;
-  ctx.body = await load_query_data(API_KEY, req.code, req.fight, req.query);
-  if (ctx.body.status) {
-    ctx.status = ctx.body.status;
-  }
-  await next();
+    const req: ProxyRequest = ctx.request.body;
+    ctx.body = await load_query_data(API_KEY, req.code, req.fight, req.query);
+    if (ctx.body.status) {
+        ctx.status = ctx.body.status;
+    }
+    await next();
 });
 
 router.get('/api/v1/proxy/meta/:code', async (ctx, next) => {
-  ctx.body = await load_meta(API_KEY, ctx.params.code);
-  if (ctx.body.status) {
-    ctx.status = ctx.body.status;
-  }
-  await next();
+    ctx.body = await load_meta(API_KEY, ctx.params.code);
+    if (ctx.body.status) {
+        ctx.status = ctx.body.status;
+    }
+    await next();
 });
 
 app.use(router.routes()).use(router.allowedMethods());
 
 app.listen(port, () => {
-  console.info('Started server...');
+    console.info('Started server...');
 });

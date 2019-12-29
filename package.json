@@ -91,8 +91,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "eslint --ext js,ts,tsx src",
-    "prettify": "prettier --single-quote --write 'src/**/*.{tsx,ts,js}'",
-    "pretty-check": "prettier --single-quote --check 'src/**/*.{tsx,ts,js}'"
+    "prettify": "prettier --tab-width 4 --single-quote --write 'src/**/*.{tsx,ts,js}'",
+    "pretty-check": "prettier --tab-width 4 --single-quote --check 'src/**/*.{tsx,ts,js}'"
   },
   "eslintConfig": {
     "extends": "react-app"
