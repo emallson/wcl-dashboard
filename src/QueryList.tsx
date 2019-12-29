@@ -6,6 +6,7 @@ import { ReportCode, Guid, AppState } from './store';
 import { updateVizOrder } from './store/visualization';
 import QueryViz from './QueryViz';
 import { SortableContainer } from 'react-sortable-hoc';
+import { SectionContainer } from './Section';
 
 type QueryListProps = {
     code: ReportCode | null;
@@ -49,14 +50,23 @@ const QueryList: React.FC<QueryListProps & {
     updateOrder: typeof updateVizOrder;
 }> = props => {
     return (
-        <SortableQueryList
-            {...props}
-            axis="xy"
-            useDragHandle
-            onSortEnd={({ oldIndex, newIndex }) =>
-                props.updateOrder(props.guids[oldIndex], oldIndex, newIndex)
+        <SectionContainer
+            title={
+                <span>
+                    <em>Unsorted</em>
+                </span>
             }
-        />
+            editable={false}
+        >
+            <SortableQueryList
+                {...props}
+                axis="xy"
+                useDragHandle
+                onSortEnd={({ oldIndex, newIndex }) =>
+                    props.updateOrder(props.guids[oldIndex], oldIndex, newIndex)
+                }
+            />
+        </SectionContainer>
     );
 };
 

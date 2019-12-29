@@ -1,0 +1,46 @@
+@import "solarized";
+@import "libertine";
+
+.section-content {
+    border: 2px solid $base03;
+    min-height: 10em;
+    margin-bottom: 1em;
+}
+
+.section-head {
+    @include rebase($base03,$base02,$base01,$base00,$base0,$base1,$base2,$base3)
+    height: 2em;
+    display: table;
+    min-width: 25%;
+    padding: 0.5em 1em 0 1em;
+}
+
+.section-toggle {
+    display: inline-block;
+    margin-right: 0.5em;
+    transform: rotate(90deg);
+}
+
+.collapsed {
+    .section-toggle {
+        transform: none;
+    }
+
+    .section-content {
+        min-height: 0;
+        border-width: 1.5px;
+    }
+}
+
+.section-control {
+    display: inline-block;
+    float: right;
+
+    .hover:hover {
+        color: $base3;
+        svg {
+            fill: $base3;
+        }
+    }
+
+}

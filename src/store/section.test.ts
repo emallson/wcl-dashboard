@@ -1,5 +1,6 @@
 import { OrderedMap } from 'immutable';
 import * as sec from './section';
+import { createGuid } from './index';
 
 describe('the section reducer', () => {
     describe('creation', () => {
@@ -79,6 +80,106 @@ describe('the section reducer', () => {
                     .map(sec => sec.index)
                     .toJS()
             ).toEqual([0, 1]);
+        });
+    });
+
+    describe('adding visualizations', () => {
+        it('should add to the end of the list by default', () => {
+            let state = sec.reducer(OrderedMap(), { type: sec.CREATE_SECTION });
+            const id = state.keySeq().get(0)!;
+
+            const guids = [createGuid(), createGuid()];
+            const final_state = guids.reduce(
+                (state, guid) =>
+                    sec.reducer(state, {
+                        type: sec.SECTION_ADD_VIZ,
+                        section: id,
+                        viz: guid
+                    }),
+                state
+            );
+
+            const section = final_state.get(id)!;
+            expect(section.contents.count()).toBe(2);
+            expect(section.contents.toArray()).toEqual(guids);
+        });
+
+        it('should insert at specific positions when given', () => {
+            let state = sec.reducer(OrderedMap(), { type: sec.CREATE_SECTION });
+            const id = state.keySeq().get(0)!;
+
+            const guids = [createGuid(), createGuid()];
+            state = guids.reduce(
+                (state, guid) =>
+                    sec.reducer(state, {
+                        type: sec.SECTION_ADD_VIZ,
+                        section: id,
+                        viz: guid
+                    }),
+                state
+            );
+
+            const target = createGuid();
+            const final_state = sec.reducer(state, {
+                type: sec.SECTION_ADD_VIZ,
+                section: id,
+                viz: target,
+                position: 1
+            });
+
+            const section = final_state.get(id)!;
+            expect(section.contents.count()).toBe(3);
+            guids.splice(1, 0, target);
+            expect(section.contents.toArray()).toEqual(guids);
+        });
+
+        it('should not add duplicate entries', () => {
+            let state = sec.reducer(OrderedMap(), { type: sec.CREATE_SECTION });
+            const id = state.keySeq().get(0)!;
+
+            const guids = [createGuid(), createGuid()];
+            guids.push(guids[0]);
+            const final_state = guids.reduce(
+                (state, guid) =>
+                    sec.reducer(state, {
+                        type: sec.SECTION_ADD_VIZ,
+                        section: id,
+                        viz: guid
+                    }),
+                state
+            );
+
+            const section = final_state.get(id)!;
+            expect(section.contents.count()).toBe(2);
+            expect(section.contents.toArray()).toEqual(guids.slice(0, 2));
+        });
+    });
+
+    describe('removing visualizations', () => {
+        it('should remove the viz from the list', () => {
+            let state = sec.reducer(OrderedMap(), { type: sec.CREATE_SECTION });
+            const id = state.keySeq().get(0)!;
+
+            const guids = [createGuid(), createGuid()];
+            state = guids.reduce(
+                (state, guid) =>
+                    sec.reducer(state, {
+                        type: sec.SECTION_ADD_VIZ,
+                        section: id,
+                        viz: guid
+                    }),
+                state
+            );
+
+            const final_state = sec.reducer(state, {
+                type: sec.SECTION_REMOVE_VIZ,
+                section: id,
+                viz: guids[0]
+            });
+
+            const section = final_state.get(id)!;
+            expect(section.contents.count()).toBe(1);
+            expect(section.contents.toArray()).toEqual([guids[1]]);
         });
     });
 });

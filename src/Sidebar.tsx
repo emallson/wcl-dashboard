@@ -19,6 +19,7 @@ import {
     AppState
 } from './store';
 import { createViz } from './store/visualization';
+import { CREATE_SECTION } from './store/section';
 import { bulkExport } from './store/bulk_export';
 import parse from 'url-parse';
 
@@ -45,6 +46,21 @@ const Icon = (props: any) => (
     />
 );
 
+const LabelIcon = (props: { label: string; icon: any } & any) => {
+    return (
+        <div
+            className="hover"
+            style={{
+                display: 'inline-block',
+                marginRight: '1em'
+            }}
+            {...props}
+        >
+            <BaseIcon size={28} icon={props.icon} /> {props.label}
+        </div>
+    );
+};
+
 const _MenuBar: React.FC<MenuBarProps> = ({
     create,
     beginImport,
@@ -53,6 +69,7 @@ const _MenuBar: React.FC<MenuBarProps> = ({
     title
 }) => {
     const [sidebarVisible, setSidebarVisible] = React.useState(false);
+    const dispatch = useDispatch();
 
     const sidebar = <SideBar closeSidebar={() => setSidebarVisible(false)} />;
 
@@ -73,7 +90,16 @@ const _MenuBar: React.FC<MenuBarProps> = ({
                     onClick={() => (code ? update(code) : null)}
                 />
                 <div className="right">
-                    <Icon icon={add} onClick={() => create()} />
+                    <LabelIcon
+                        icon={add}
+                        label="Section"
+                        onClick={() => dispatch({ type: CREATE_SECTION })}
+                    />
+                    <LabelIcon
+                        icon={add}
+                        onClick={() => create()}
+                        label="Graphic"
+                    />
                     <Icon icon={download} onClick={() => beginImport()} />
                 </div>
             </div>

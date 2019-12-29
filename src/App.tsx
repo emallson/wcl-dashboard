@@ -10,6 +10,7 @@ import { MenuBar } from './Sidebar';
 import ExportView from './ExportView';
 import ImportView from './ImportView';
 import QueryList from './QueryList';
+import SectionList from './SectionList';
 
 type Props = {};
 
@@ -30,6 +31,7 @@ const App: React.FC<Props> = () => {
             />
             <MenuBar />
             <QueryList />
+            <SectionList />
             {exporting ? <ExportView guid={exporting} /> : null}
             {importing ? <ImportView /> : null}
         </>

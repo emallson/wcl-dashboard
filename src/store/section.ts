@@ -19,7 +19,7 @@ export type Section = {
     title: string;
     index: number;
     // if omitted, defaults to the main report code
-    code?: ReportCode;
+    code: ReportCode | null;
     // visualizations can be in multiple sections at once
     contents: List<VizId>;
 };
@@ -39,7 +39,7 @@ export const SET_SECTION_CODE = Symbol('SET_SECTION_CODE');
 interface SetSectionCodeAction {
     type: typeof SET_SECTION_CODE;
     id: SectionId;
-    code: ReportCode;
+    code: ReportCode | null;
 }
 
 export const SET_SECTION_TITLE = Symbol('SET_SECTION_TITLE');
@@ -100,6 +100,7 @@ export function reducer(
             const id = createSectionId();
             return state.set(id, {
                 id,
+                code: null,
                 index: state.count(),
                 title: 'Untitled',
                 contents: List()
@@ -110,6 +111,28 @@ export function reducer(
                 sec.index = index++;
                 return sec;
             });
+        case SECTION_ADD_VIZ:
+            return state.updateIn(
+                [action.section, 'contents'],
+                (list: List<VizId>) => {
+                    if (list.contains(action.viz)) {
+                        return list; // do nothing --- OrderedSet doesn't allow splicing
+                    }
+                    if (action.position) {
+                        return list.insert(action.position, action.viz);
+                    } else {
+                        return list.push(action.viz);
+                    }
+                }
+            );
+        case SECTION_REMOVE_VIZ:
+            return state.updateIn([action.section, 'contents'], list => {
+                return list.filter((guid: VizId) => guid !== action.viz);
+            });
+        case SET_SECTION_CODE:
+            return state.setIn([action.id, 'code'], action.code);
+        case SET_SECTION_TITLE:
+            return state.setIn([action.id, 'title'], action.title);
         default:
             return state;
     }

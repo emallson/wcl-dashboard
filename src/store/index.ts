@@ -157,6 +157,7 @@ export const initialState: AppState = {
         queries: Set()
     },
     visualizations: OrderedMap(),
+    sections: OrderedMap(),
     pending_updates: List(),
     exporting: null,
     importing: false
