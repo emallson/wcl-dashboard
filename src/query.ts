@@ -1,4 +1,10 @@
-import { AppState, ReportCode, lookupActorName, updateQueryKey } from './store';
+import {
+  AppState,
+  ReportCode,
+  ReportState,
+  lookupActorName,
+  updateQueryKey
+} from './store';
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
 import Dexie from 'dexie';
@@ -135,6 +141,7 @@ export async function storeData(
   query: QueryMeta,
   data: QueryVizData
 ): Promise<number> {
+  console.log(report, fight, query, data, typeof data);
   return db.records.put({
     report: report.toString(),
     queryKey: queryKey(query).toString(),
@@ -236,46 +243,72 @@ type RawEvent = {
 };
 type RawTableData = { entries: object[]; totalTime: number };
 type RawEventData = { events: RawEvent[] };
+export interface QueryRegion {
+  start: number;
+  end: number;
+  fights: [number];
+}
+
+const splitData = (
+  report: ReportState,
+  data: RawEventData,
+  fights: number[]
+): RawEventData[] => {
+  return fights.map(fight => {
+    const meta = report.fights.find(({ id }) => id === fight)!;
+    return {
+      events: data.events.filter(
+        ({ timestamp }) =>
+          timestamp >= meta.start_time && timestamp <= meta.end_time
+      )
+    };
+  });
+};
+
 export function queryFormatData(
   report: ReportCode,
-  fight: number,
+  fights: number[],
   query: QueryMeta,
   data: object,
   state: AppState
-): QueryVizData {
+): QueryVizData[] {
   switch (query.kind.kind) {
     case QueryType.Event:
       const edata = data as RawEventData;
       const report_data = state.reports.get(report)!;
-      return {
-        name: 'data',
-        values: edata.events.map(datum => {
-          return {
-            report,
-            fight,
-            sourceName: datum.sourceID
-              ? lookupActorName(report_data, datum.sourceID, 'Unknown')
-              : undefined,
-            targetName: datum.targetID
-              ? lookupActorName(report_data, datum.targetID, 'Unknown')
-              : undefined,
-            ...datum
-          };
-        })
-      };
+      return splitData(report_data, edata, fights).map((edata, idx) => {
+        return {
+          name: 'data',
+          values: edata.events.map(datum => {
+            return {
+              report,
+              fight: fights[idx],
+              sourceName: datum.sourceID
+                ? lookupActorName(report_data, datum.sourceID, 'Unknown')
+                : undefined,
+              targetName: datum.targetID
+                ? lookupActorName(report_data, datum.targetID, 'Unknown')
+                : undefined,
+              ...datum
+            };
+          })
+        };
+      });
     case QueryType.Table:
       const tdata = data as RawTableData;
-      return {
-        name: 'data',
-        values: tdata.entries.map((datum: object) => {
-          return {
-            report,
-            fight,
-            totalTime: tdata.totalTime,
-            ...datum
-          };
-        })
-      };
+      return [
+        {
+          name: 'data',
+          values: tdata.entries.map((datum: object) => {
+            return {
+              report,
+              fight: fights[0],
+              totalTime: tdata.totalTime,
+              ...datum
+            };
+          })
+        }
+      ];
   }
 }
 

@@ -15,6 +15,8 @@ import { proxy_meta, proxy_query_data } from '../request';
 import {
   QueryId,
   QueryMeta,
+  QueryRegion,
+  QueryType,
   queryKey,
   queryFormatData,
   shouldUpdate as shouldUpdateQuery,
@@ -334,41 +336,101 @@ export function updateQueries(
         fights
       });
 
+      interface RegionReduce {
+        last: number;
+        regions: QueryRegion[];
+      }
+
+      const regionReducer = (
+        reducer: RegionReduce,
+        fight: number
+      ): RegionReduce => {
+        const fight_meta = report.fights.find(({ id }) => id === fight)!;
+        if (fight === reducer.last + 1) {
+          const region = reducer.regions[reducer.regions.length - 1];
+          region.end = fight_meta.end_time;
+          region.fights.push(fight);
+        } else {
+          reducer.regions.push({
+            start: fight_meta.start_time,
+            end: fight_meta.end_time,
+            fights: [fight]
+          });
+        }
+
+        reducer.last = fight;
+        return reducer;
+      };
+
+      let regions = null;
+
+      if (query!.kind.kind === QueryType.Event) {
+        const initial_fight = report.fights.find(({ id }) => id === fights[0])!;
+        const initial: RegionReduce = {
+          last: fights[0],
+          regions: [
+            {
+              fights: [fights[0]],
+              start: initial_fight.start_time,
+              end: initial_fight.end_time
+            }
+          ]
+        };
+
+        regions = fights.slice(1).reduce(regionReducer, initial).regions;
+      } else if (query!.kind.kind === QueryType.Table) {
+        regions = fights.map(fight => {
+          const meta = report.fights.find(({ id }) => id === fight)!;
+          return {
+            fights: [fight],
+            start: meta.start_time,
+            end: meta.end_time
+          };
+        });
+      }
+
       Promise.all(
-        fights.map(fight => {
-          return proxy_query_data(
-            code,
-            report.fights.find(({ id }) => id === fight)!,
-            query!
-          )
+        regions!.map(region => {
+          return proxy_query_data(code, region.start, region.end, query!)
             .then(body => {
               const data = queryFormatData(
                 code,
-                fight,
+                region.fights,
                 query!,
                 body,
                 app_state
               );
-              return storeData(code, fight, query!, data);
+              return Promise.all(
+                data.map((d, idx) =>
+                  storeData(code, region.fights[idx], query!, d).then(index => [
+                    region.fights[idx],
+                    index
+                  ])
+                )
+              );
             })
             .then(
-              index =>
-                dispatch({
-                  type: RETRIEVED_UPDATE_QUERY,
-                  code,
-                  fight,
-                  query,
-                  index
-                }),
+              indices =>
+                indices.forEach(([fight, index]) =>
+                  dispatch({
+                    type: RETRIEVED_UPDATE_QUERY,
+                    code,
+                    fight,
+                    query,
+                    index
+                  })
+                ),
               body => {
                 console.error(body);
-                dispatch({
-                  type: ERROR_UPDATE_QUERY,
-                  code,
-                  fight,
-                  query,
-                  body
-                });
+                fights.forEach(fight =>
+                  dispatch({
+                    type: ERROR_UPDATE_QUERY,
+                    code,
+                    fight,
+                    query,
+                    body
+                  })
+                );
               }
             );
         })

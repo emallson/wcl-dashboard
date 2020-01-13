@@ -34,12 +34,19 @@ const router = new Router();
 interface ProxyRequest {
   code: ReportCode;
   query: QueryMeta;
-  fight: FightMeta;
+  start: number;
+  end: number;
 }
 
 router.post('/api/v1/proxy/query', async (ctx, next) => {
   const req: ProxyRequest = ctx.request.body;
-  ctx.body = await load_query_data(API_KEY, req.code, req.fight, req.query);
+  ctx.body = await load_query_data(
+    API_KEY,
+    req.code,
+    req.start,
+    req.end,
+    req.query
+  );
   if (ctx.body.status) {
     ctx.status = ctx.body.status;
   }

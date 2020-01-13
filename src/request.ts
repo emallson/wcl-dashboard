@@ -1,5 +1,5 @@
 import fetch from 'cross-fetch';
-import { ApiKey, ReportCode, FightMeta } from './store';
+import { ApiKey, ReportCode } from './store';
 import { QueryMeta, QueryType } from './query';
 import queryString from 'query-string';
 
@@ -33,7 +33,8 @@ export async function load_meta(key: ApiKey, code: ReportCode) {
 export async function load_query_data(
   key: ApiKey,
   code: ReportCode,
-  fight: FightMeta,
+  start: number,
+  end: number,
   query: QueryMeta
 ) {
   let url = BASE_URL;
@@ -50,8 +51,8 @@ export async function load_query_data(
     '?' +
     queryString.stringify({
       api_key: key,
-      start: fight.start_time,
-      end: fight.end_time,
+      start,
+      end,
       filter: query.filter,
       ...(query.cutoff ? { cutoff: query.cutoff } : {})
     });
@@ -79,7 +80,8 @@ export async function proxy_meta(code: ReportCode) {
 
 export async function proxy_query_data(
   code: ReportCode,
-  fight: FightMeta,
+  start: number,
+  end: number,
   query: QueryMeta
 ) {
   const res = await fetch(`${PROXY_HOST}/api/v1/proxy/query`, {
@@ -90,7 +92,8 @@ export async function proxy_query_data(
     },
     body: JSON.stringify({
       code,
-      fight,
+      start,
+      end,
       query
     })
   });
