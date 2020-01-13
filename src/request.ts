@@ -99,6 +99,16 @@ export async function proxy_query_data(
   });
 
   const body = await res.json();
+  if (query.kind.kind === QueryType.Event && body.nextPageTimestamp) {
+    const remainder = await proxy_query_data(
+      code,
+      body.nextPageTimestamp,
+      end,
+      query
+    );
+    body.events.push(...remainder.events);
+    delete body.nextPageTimestamp;
+  }
   if (res.status >= 300) {
     throw new Error(body.error);
   }
