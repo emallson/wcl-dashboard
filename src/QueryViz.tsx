@@ -16,6 +16,7 @@ import {
   exportViz,
   hasReportMeta,
   ReportCode,
+  ReportState,
   Guid,
   AppState
 } from './store';
@@ -40,6 +41,7 @@ import './QueryViz.scss';
 import './grip.css';
 
 type QueryVizProps = {
+  report: ReportState | null;
   state: VizState;
   clearQueryIndex: typeof clearQueryIndex;
   data_indices: number[] | null;
@@ -106,6 +108,7 @@ export const QueryView: React.FC<{
   flip: () => void;
 }> = ({ data, spec, loading, flip }) => {
   const [renderError, setRenderError] = useState<any>(null);
+
   const vega = (
     <Vega
       spec={{
@@ -316,9 +319,15 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
   }
 
   render() {
-    const { state } = this.props;
+    const { state, report } = this.props;
     const { data } = this.state;
-    const spec = { ...state.spec, data } as VisualizationSpec;
+    const spec = { ...defaultSpec, datasets: {}, ...state.spec, data };
+    spec.datasets = {
+      enemies: report ? report.enemies : [],
+      friendlies: report ? report.friendlies : [],
+      fights: report ? report.fights : [],
+      ...spec.datasets,
+    };
     console.log(spec);
 
     if (this.state.flipped) {
@@ -332,7 +341,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
         <div className="query-viz">
           <QueryView
             data={data}
-            spec={spec}
+            spec={spec as VisualizationSpec}
             loading={this.state.loading || this.props.external_load}
             flip={this.flip.bind(this)}
           />
@@ -371,6 +380,7 @@ const mapState = (
 ) => {
   const vizState = state.visualizations.get(guid)!;
   return {
+    report: code ? state.reports.get(code)! : null,
     state: vizState,
     data_indices: getDataIndices(state, code, vizState.query),
     external_load:
