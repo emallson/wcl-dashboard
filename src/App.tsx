@@ -15,27 +15,27 @@ import SectionList from './SectionList';
 type Props = {};
 
 const App: React.FC<Props> = () => {
-    const { exporting, importing } = useSelector((state: AppState) => {
-        return {
-            exporting: state.exporting,
-            importing: state.importing
-        };
-    });
+  const { exporting, importing } = useSelector((state: AppState) => {
+    return {
+      exporting: state.exporting,
+      importing: state.importing
+    };
+  });
 
-    return (
-        <>
-            <ToastContainer
-                position="top-right"
-                bodyClassName="toast-text"
-                autoClose={10000}
-            />
-            <MenuBar />
-            <QueryList />
-            <SectionList />
-            {exporting ? <ExportView guid={exporting} /> : null}
-            {importing ? <ImportView /> : null}
-        </>
-    );
+  return (
+    <>
+      <ToastContainer
+        position="top-right"
+        bodyClassName="toast-text"
+        autoClose={10000}
+      />
+      <MenuBar />
+      <QueryList />
+      <SectionList />
+      {exporting ? <ExportView guid={exporting} /> : null}
+      {importing ? <ImportView /> : null}
+    </>
+  );
 };
 
 export default App;

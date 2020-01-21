@@ -13,12 +13,12 @@ import * as serviceWorker from './serviceWorker';
 const { store, persistor } = buildStore();
 
 ReactDOM.render(
-    <Provider store={store}>
-        <PersistGate persistor={persistor}>
-            <App />
-        </PersistGate>
-    </Provider>,
-    document.getElementById('root')
+  <Provider store={store}>
+    <PersistGate persistor={persistor}>
+      <App />
+    </PersistGate>
+  </Provider>,
+  document.getElementById('root')
 );
 
 // If you want your app to work offline and load faster, you can change

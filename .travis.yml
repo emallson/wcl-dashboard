@@ -11,3 +11,5 @@ jobs:
       name: "lint"
     - script: yarn pretty-check
       name: "prettier"
+    - script: yarn build
+      name: "build"
