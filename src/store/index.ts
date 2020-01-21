@@ -776,7 +776,7 @@ export default function buildStore() {
   const pReducer = persistReducer(persistCfg, rootReducer);
   const store = createStore(
     pReducer,
-    initialState,
+    initialState as any, // getting a type error after redux upgrade, ugh
     applyMiddleware(thunkMiddleware, createLogger())
   );
 
