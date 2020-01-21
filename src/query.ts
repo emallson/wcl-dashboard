@@ -2,7 +2,6 @@ import {
   AppState,
   ReportCode,
   ReportState,
-  lookupActorName,
   updateQueryKey
 } from './store';
 import { Newtype, prism } from 'newtype-ts';
@@ -236,12 +235,15 @@ export function createQueryMeta(
   };
 }
 
-type RawEvent = {
-  timestamp: number;
-  sourceID?: number;
-  targetID?: number;
-};
-type RawTableData = { entries: object[]; totalTime: number };
+export interface RawEvent {
+  timestamp: number,
+  sourceID?: number,
+  targetID?: number,
+}
+interface RawTableEntry {
+  name: string,
+}
+type RawTableData = { entries: RawTableEntry[]; totalTime: number };
 type RawEventData = { events: RawEvent[] };
 export interface QueryRegion {
   start: number;
@@ -283,12 +285,6 @@ export function queryFormatData(
             return {
               report,
               fight: fights[idx],
-              sourceName: datum.sourceID
-                ? lookupActorName(report_data, datum.sourceID, 'Unknown')
-                : undefined,
-              targetName: datum.targetID
-                ? lookupActorName(report_data, datum.targetID, 'Unknown')
-                : undefined,
               ...datum
             };
           })
@@ -299,7 +295,7 @@ export function queryFormatData(
       return [
         {
           name: 'data',
-          values: tdata.entries.map((datum: object) => {
+          values: tdata.entries.map((datum) => {
             return {
               report,
               fight: fights[0],
@@ -312,9 +308,26 @@ export function queryFormatData(
   }
 }
 
+export interface Event {
+  report: ReportCode,
+  fight: number,
+  sourceID?: number,
+  targetID?: number,
+  timestamp: number,
+}
+
+export interface TableEntry {
+  report: ReportCode,
+  fight: number,
+  totalTime: number,
+  name: string,
+}
+
+type Rows = Event[] | TableEntry[];
+
 export type QueryVizData = {
   name: string;
-  values: any[];
+  values: Rows;
 };
 export async function queryData(
   query: QueryMeta,
@@ -331,7 +344,7 @@ export async function queryData(
   } else {
     const values = query_data
       .map(({ data }) => data)
-      .reduce((full, { values: next }) => full.concat(next), [] as object[]);
+      .reduce((full, { values: next }) => full.concat(next), [] as any) as Rows;
     return Promise.resolve({
       name: 'data',
       values
@@ -351,13 +364,21 @@ export function queryDataChanged(
     return true;
   }
 
-  // or the timestmaps of the first/last events have changed
+  // or this is event data and the timestamps of the first/last events have changed
   if (newData.values.length > 0 && oldData.values.length > 0) {
-    return (
-      newData.values[0].timestamp !== oldData.values[0].timestamp ||
-      newData.values[newData.values.length - 1].timestamp !==
-        oldData.values[oldData.values.length - 1].timestamp
-    );
+    // type guards don't correctly discriminate array values, ugh
+    const firstNew = newData.values[0];
+    const firstOld = oldData.values[0];
+    const lastNew = newData.values[newData.values.length - 1];
+    const lastOld = oldData.values[oldData.values.length - 1];
+    if('timestamp' in firstNew && 'timestamp' in firstOld && 'timestamp' in lastNew && 'timestamp' in lastOld)
+    {
+      return (
+        firstNew.timestamp !== firstOld.timestamp ||
+        lastNew.timestamp !==
+        lastOld.timestamp
+      );
+    }
   }
 
   return false;

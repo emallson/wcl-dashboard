@@ -107,30 +107,6 @@ export type ReportState = {
   title?: string;
 };
 
-export function lookupActor(
-  report: ReportState,
-  id: number
-): ActorMeta | undefined {
-  const friendly = report.friendlies.find(({ id: lid }) => id === lid);
-  if (friendly) {
-    return friendly;
-  }
-  return report.enemies.find(({ id: lid }) => id === lid);
-}
-
-export function lookupActorName(
-  report: ReportState,
-  id: number,
-  default_value: string
-): string {
-  const actor = lookupActor(report, id);
-  if (actor === undefined) {
-    return default_value;
-  } else {
-    return actor.name;
-  }
-}
-
 function emptyReportState(code: ReportCode): ReportState {
   return {
     code,

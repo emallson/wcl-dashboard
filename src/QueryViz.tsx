@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Dispatch } from 'redux';
 import { connect, useDispatch } from 'react-redux';
+import { Event, TableEntry } from './query';
+import * as eventTransforms from './event_transforms';
 
 import {
   queryKey,
@@ -283,16 +285,24 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
           if (missing_data.length > 0) {
             this.props.clearQueryIndex(missing_data);
           }
+
+          let values = data
+            .filter(datum => datum !== undefined)
+            .reduce(
+              (result, datum) => result.concat(datum!.data.values),
+              [] as any[]
+            );
+
+          if('timestamp' in values[0]) {
+            values = (values as Event[]).map(event => Object.values(eventTransforms).reduce((val, fn) => fn(val, this.props.report!), event));
+          } else {
+            values = values as TableEntry[];
+          }
           this.setState({
             loading: false,
             data: {
               name: 'data',
-              values: data
-                .filter(datum => datum !== undefined)
-                .reduce(
-                  (result, datum) => result.concat(datum!.data.values),
-                  [] as any[]
-                )
+              values
             }
           });
         })
