@@ -1,9 +1,4 @@
-import {
-  AppState,
-  ReportCode,
-  ReportState,
-  updateQueryKey
-} from './store';
+import { AppState, ReportCode, ReportState, updateQueryKey } from './store';
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
 import Dexie from 'dexie';
@@ -236,12 +231,12 @@ export function createQueryMeta(
 }
 
 export interface RawEvent {
-  timestamp: number,
-  sourceID?: number,
-  targetID?: number,
+  timestamp: number;
+  sourceID?: number;
+  targetID?: number;
 }
 interface RawTableEntry {
-  name: string,
+  name: string;
 }
 type RawTableData = { entries: RawTableEntry[]; totalTime: number };
 type RawEventData = { events: RawEvent[] };
@@ -295,7 +290,7 @@ export function queryFormatData(
       return [
         {
           name: 'data',
-          values: tdata.entries.map((datum) => {
+          values: tdata.entries.map(datum => {
             return {
               report,
               fight: fights[0],
@@ -309,18 +304,18 @@ export function queryFormatData(
 }
 
 export interface Event {
-  report: ReportCode,
-  fight: number,
-  sourceID?: number,
-  targetID?: number,
-  timestamp: number,
+  report: ReportCode;
+  fight: number;
+  sourceID?: number;
+  targetID?: number;
+  timestamp: number;
 }
 
 export interface TableEntry {
-  report: ReportCode,
-  fight: number,
-  totalTime: number,
-  name: string,
+  report: ReportCode;
+  fight: number;
+  totalTime: number;
+  name: string;
 }
 
 type Rows = Event[] | TableEntry[];
@@ -371,12 +366,15 @@ export function queryDataChanged(
     const firstOld = oldData.values[0];
     const lastNew = newData.values[newData.values.length - 1];
     const lastOld = oldData.values[oldData.values.length - 1];
-    if('timestamp' in firstNew && 'timestamp' in firstOld && 'timestamp' in lastNew && 'timestamp' in lastOld)
-    {
+    if (
+      'timestamp' in firstNew &&
+      'timestamp' in firstOld &&
+      'timestamp' in lastNew &&
+      'timestamp' in lastOld
+    ) {
       return (
         firstNew.timestamp !== firstOld.timestamp ||
-        lastNew.timestamp !==
-        lastOld.timestamp
+        lastNew.timestamp !== lastOld.timestamp
       );
     }
   }

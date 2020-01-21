@@ -293,8 +293,13 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
               [] as any[]
             );
 
-          if('timestamp' in values[0]) {
-            values = (values as Event[]).map(event => Object.values(eventTransforms).reduce((val, fn) => fn(val, this.props.report!), event));
+          if ('timestamp' in values[0]) {
+            values = (values as Event[]).map(event =>
+              Object.values(eventTransforms).reduce(
+                (val, fn) => fn(val, this.props.report!),
+                event
+              )
+            );
           } else {
             values = values as TableEntry[];
           }
@@ -336,7 +341,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
       enemies: report ? report.enemies : [],
       friendlies: report ? report.friendlies : [],
       fights: report ? report.fights : [],
-      ...spec.datasets,
+      ...spec.datasets
     };
     console.log(spec);
 

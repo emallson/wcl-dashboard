@@ -3,7 +3,7 @@ import { Event } from './query';
 
 function lookupActor(
   report: ReportState,
-  id: number | undefined,
+  id: number | undefined
 ): ActorMeta | undefined {
   const friendly = report.friendlies.find(({ id: lid }) => id === lid);
   if (friendly) {
@@ -25,17 +25,23 @@ function lookupActorName(
   }
 }
 
-export function actorNameTransform<T extends Event>(event: T, report: ReportState): T & { sourceName: string, targetName: string } {
+export function actorNameTransform<T extends Event>(
+  event: T,
+  report: ReportState
+): T & { sourceName: string; targetName: string } {
   return {
     ...event,
-    sourceName: lookupActorName(report, event.sourceID, "Unknown"),
-    targetName: lookupActorName(report, event.targetID, "Unknown")
-  }
+    sourceName: lookupActorName(report, event.sourceID, 'Unknown'),
+    targetName: lookupActorName(report, event.targetID, 'Unknown')
+  };
 }
 
-export function encounterNameTransform<T extends Event>(event: T, report: ReportState): T & { encounterName: string } {
+export function encounterNameTransform<T extends Event>(
+  event: T,
+  report: ReportState
+): T & { encounterName: string } {
   return {
     ...event,
-    encounterName: report.fights.find(({ id }) => id === event.fight)!.name,
-  }
+    encounterName: report.fights.find(({ id }) => id === event.fight)!.name
+  };
 }
