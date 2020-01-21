@@ -86,9 +86,9 @@ export const SectionContainer = (props: {
 const Section = ({ guid }: { guid: SectionId }) => {
   const section = useSelector((state: AppState) => state.sections.get(guid)!);
 
-  const views = section.contents.toArray().map((vid, index) => {
+  const views = section.contents.toArray().map((vid) => {
     return (
-      <QueryViz key={vid.toString()} code={null} guid={vid} index={index} />
+      <QueryViz key={vid.toString()} code={null} guid={vid} />
     );
   });
 

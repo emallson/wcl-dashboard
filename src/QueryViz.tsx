@@ -34,7 +34,6 @@ import 'brace';
 import 'brace/mode/json';
 import 'brace/theme/solarized_light';
 import AceEditor from 'react-ace';
-import { SortableHandle, SortableElement } from 'react-sortable-hoc';
 import GridLoader from 'react-spinners/GridLoader';
 import equal from 'fast-deep-equal';
 import { notify_error } from './notify';
@@ -84,7 +83,7 @@ const vega_options: EmbedOptions = {
   config: vega_config
 };
 
-const Handle = SortableHandle(() => {
+const Handle = (() => {
   return <span className="grippy" style={{ marginRight: 8 }}></span>;
 });
 
@@ -412,4 +411,4 @@ const mapDispatch = (dispatch: Dispatch) => {
   };
 };
 
-export default connect(mapState, mapDispatch)(SortableElement(QueryViz));
+export default connect(mapState, mapDispatch)(QueryViz);

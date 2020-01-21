@@ -2,6 +2,8 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import 'react-toastify/dist/ReactToastify.min.css';
 import { ToastContainer } from 'react-toastify';
+import { DndProvider } from 'react-dnd';
+import Backend from 'react-dnd-html5-backend';
 
 import { AppState } from './store';
 import './App.css';
@@ -30,8 +32,10 @@ const App: React.FC<Props> = () => {
         autoClose={10000}
       />
       <MenuBar />
-      <QueryList />
-      <SectionList />
+      <DndProvider backend={Backend}>
+        <QueryList />
+        <SectionList />
+      </DndProvider>
       {exporting ? <ExportView guid={exporting} /> : null}
       {importing ? <ImportView /> : null}
     </>

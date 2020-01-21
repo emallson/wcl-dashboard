@@ -3,9 +3,8 @@ import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 
 import { ReportCode, Guid, AppState } from './store';
-import { updateVizOrder } from './store/visualization';
+// import { updateVizOrder } from './store/visualization';
 import QueryViz from './QueryViz';
-import { SortableContainer } from 'react-sortable-hoc';
 import { SectionContainer } from './Section';
 
 type QueryListProps = {
@@ -13,24 +12,27 @@ type QueryListProps = {
   guids: Guid[];
 };
 
-const Queries: React.FC<QueryListProps> = ({ code, guids }) => {
+const QueryList: React.FC<QueryListProps> = ({ code, guids }) => {
   return (
-    <div className="query-container">
-      <div className="query-list">
-        {guids.map((guid, index) => (
-          <QueryViz
-            index={index}
-            key={guid.toString()}
-            guid={guid}
-            code={code}
-          />
-        ))}
+    <SectionContainer
+      title="Unsorted"
+      editable={false}
+    >
+      <div className="query-container">
+        <div className="query-list">
+          {guids.map((guid) => (
+            <QueryViz
+              // index={index}
+              key={guid.toString()}
+              guid={guid}
+              code={code}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+    </SectionContainer>
   );
 };
-
-const SortableQueryList = SortableContainer(Queries);
 
 const mapState = (state: AppState) => {
   return {
@@ -41,29 +43,7 @@ const mapState = (state: AppState) => {
 
 const mapDispatch = (dispatch: Dispatch) => {
   return {
-    updateOrder: (guid: Guid, oldIndex: number, newIndex: number) =>
-      dispatch(updateVizOrder(guid, oldIndex, newIndex))
   };
-};
-
-const QueryList: React.FC<QueryListProps & {
-  updateOrder: typeof updateVizOrder;
-}> = props => {
-  return (
-    <SectionContainer
-      title="Unsorted"
-      editable={false}
-    >
-      <SortableQueryList
-        {...props}
-        axis="xy"
-        useDragHandle
-        onSortEnd={({ oldIndex, newIndex }) =>
-          props.updateOrder(props.guids[oldIndex], oldIndex, newIndex)
-        }
-      />
-    </SectionContainer>
-  );
 };
 
 export default connect(mapState, mapDispatch)(QueryList);
