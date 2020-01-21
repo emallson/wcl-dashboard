@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { Icon } from 'react-icons-kit';
-import { SectionId } from './store/section';
+import { SectionId, SET_SECTION_TITLE, DELETE_SECTION } from './store/section';
 import { AppState } from './store';
 import QueryViz from './QueryViz';
 import { ic_navigate_next as collapsed_icon } from 'react-icons-kit/md/ic_navigate_next';
@@ -12,7 +12,8 @@ import { ic_done as done_icon } from 'react-icons-kit/md/ic_done';
 import './Section.scss';
 
 export const SectionContainer = (props: {
-  title: any;
+  id?: SectionId;
+  title: string;
   children: any;
   editable?: boolean;
 }) => {
@@ -20,6 +21,8 @@ export const SectionContainer = (props: {
   // gets passed as the `title` param.
   const [collapsed, setCollapsed] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState(props.title);
+  const dispatch = useDispatch();
 
   const controls =
     props.editable !== false ? (
@@ -32,6 +35,10 @@ export const SectionContainer = (props: {
                 display: 'inline-block',
                 marginRight: '1em'
               }}
+              onClick={() => dispatch({
+                type: DELETE_SECTION,
+                id: props.id,
+              })}
             >
               <Icon size={20} icon={delete_icon} /> Delete
             </div>
@@ -39,7 +46,11 @@ export const SectionContainer = (props: {
               size={20}
               icon={done_icon}
               className="hover"
-              onClick={() => setEditing(false)}
+              onClick={() => {setEditing(false); dispatch({
+                type: SET_SECTION_TITLE,
+                id: props.id!,
+                title: currentTitle,
+              })}}
             />
           </>
         ) : (
@@ -53,6 +64,8 @@ export const SectionContainer = (props: {
       </div>
     ) : null;
 
+  const titleControl = editing ? <input type="text" value={currentTitle} onChange={e => setCurrentTitle(e.target.value)} /> : props.title;
+
   return (
     <div className={`section ${collapsed ? 'collapsed' : ''}`}>
       <div className="section-head">
@@ -62,7 +75,7 @@ export const SectionContainer = (props: {
         >
           <Icon size={20} icon={collapsed_icon} />
         </div>
-        {props.title}
+        <span>{titleControl}</span>
         {controls}
       </div>
       <div className="section-content">{collapsed ? null : props.children}</div>
@@ -80,7 +93,7 @@ const Section = ({ guid }: { guid: SectionId }) => {
   });
 
   return (
-    <SectionContainer title={<span>{section.title}</span>}>
+    <SectionContainer id={guid} title={section.title}>
       {views}
     </SectionContainer>
   );

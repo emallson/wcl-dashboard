@@ -51,11 +51,7 @@ const QueryList: React.FC<QueryListProps & {
 }> = props => {
   return (
     <SectionContainer
-      title={
-        <span>
-          <em>Unsorted</em>
-        </span>
-      }
+      title="Unsorted"
       editable={false}
     >
       <SortableQueryList
