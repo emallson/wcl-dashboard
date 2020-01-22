@@ -35,10 +35,12 @@ export const SectionContainer = (props: {
                 display: 'inline-block',
                 marginRight: '1em'
               }}
-              onClick={() => dispatch({
-                type: DELETE_SECTION,
-                id: props.id,
-              })}
+              onClick={() =>
+                dispatch({
+                  type: DELETE_SECTION,
+                  id: props.id
+                })
+              }
             >
               <Icon size={20} icon={delete_icon} /> Delete
             </div>
@@ -46,11 +48,14 @@ export const SectionContainer = (props: {
               size={20}
               icon={done_icon}
               className="hover"
-              onClick={() => {setEditing(false); dispatch({
-                type: SET_SECTION_TITLE,
-                id: props.id!,
-                title: currentTitle,
-              })}}
+              onClick={() => {
+                setEditing(false);
+                dispatch({
+                  type: SET_SECTION_TITLE,
+                  id: props.id!,
+                  title: currentTitle
+                });
+              }}
             />
           </>
         ) : (
@@ -64,7 +69,15 @@ export const SectionContainer = (props: {
       </div>
     ) : null;
 
-  const titleControl = editing ? <input type="text" value={currentTitle} onChange={e => setCurrentTitle(e.target.value)} /> : props.title;
+  const titleControl = editing ? (
+    <input
+      type="text"
+      value={currentTitle}
+      onChange={e => setCurrentTitle(e.target.value)}
+    />
+  ) : (
+    props.title
+  );
 
   return (
     <div className={`section ${collapsed ? 'collapsed' : ''}`}>
@@ -86,10 +99,8 @@ export const SectionContainer = (props: {
 const Section = ({ guid }: { guid: SectionId }) => {
   const section = useSelector((state: AppState) => state.sections.get(guid)!);
 
-  const views = section.contents.toArray().map((vid) => {
-    return (
-      <QueryViz key={vid.toString()} code={null} guid={vid} />
-    );
+  const views = section.contents.toArray().map(vid => {
+    return <QueryViz key={vid.toString()} code={null} guid={vid} />;
   });
 
   return (

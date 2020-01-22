@@ -14,13 +14,10 @@ type QueryListProps = {
 
 const QueryList: React.FC<QueryListProps> = ({ code, guids }) => {
   return (
-    <SectionContainer
-      title="Unsorted"
-      editable={false}
-    >
+    <SectionContainer title="Unsorted" editable={false}>
       <div className="query-container">
         <div className="query-list">
-          {guids.map((guid) => (
+          {guids.map(guid => (
             <QueryViz
               // index={index}
               key={guid.toString()}
@@ -42,8 +39,7 @@ const mapState = (state: AppState) => {
 };
 
 const mapDispatch = (dispatch: Dispatch) => {
-  return {
-  };
+  return {};
 };
 
 export default connect(mapState, mapDispatch)(QueryList);

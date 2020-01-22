@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dispatch } from 'redux';
-import { connect, useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Event, TableEntry } from './query';
 import * as eventTransforms from './event_transforms';
 
@@ -10,15 +10,14 @@ import {
   QueryMeta,
   QueryVizData,
   relevantFights,
-  missingFights,
-  queryDataChanged
+  missingFights
+  // queryDataChanged
 } from './query';
 import {
   clearQueryIndex,
   exportViz,
   hasReportMeta,
   ReportCode,
-  ReportState,
   Guid,
   AppState
 } from './store';
@@ -35,24 +34,15 @@ import 'brace/mode/json';
 import 'brace/theme/solarized_light';
 import AceEditor from 'react-ace';
 import GridLoader from 'react-spinners/GridLoader';
-import equal from 'fast-deep-equal';
+// import equal from 'fast-deep-equal';
 import { notify_error } from './notify';
 
 import './QueryViz.scss';
 import './grip.css';
 
 type QueryVizProps = {
-  report: ReportState | null;
-  state: VizState;
-  clearQueryIndex: typeof clearQueryIndex;
-  data_indices: number[] | null;
-  external_load: boolean;
-};
-
-type QueryVizState = {
-  flipped: boolean;
-  data: QueryVizData | null;
-  loading: boolean;
+  guid: Guid;
+  code: ReportCode | null;
 };
 
 const emSize = Number(
@@ -83,9 +73,9 @@ const vega_options: EmbedOptions = {
   config: vega_config
 };
 
-const Handle = (() => {
+const Handle = () => {
   return <span className="grippy" style={{ marginRight: 8 }}></span>;
-});
+};
 
 const view_msg_style = { margin: '2em' };
 const title_style = {
@@ -241,17 +231,7 @@ export const QueryEditor: React.FC<{ flip: () => void; state: VizState }> = ({
   );
 };
 
-class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
-  constructor(props: QueryVizProps) {
-    super(props);
-
-    this.state = {
-      flipped: false,
-      data: null,
-      loading: false
-    };
-  }
-
+/*
   shouldComponentUpdate(nextProps: QueryVizProps, nextState: QueryVizState) {
     if (!equal(nextProps, this.props)) {
       return true;
@@ -269,101 +249,7 @@ class QueryViz extends React.Component<QueryVizProps, QueryVizState> {
 
     return !equal({ ...nextState, data: null }, { ...this.state, data: null });
   }
-
-  _updateData() {
-    if (this.props.data_indices !== null) {
-      this.setState({ loading: true });
-      getDataById(this.props.data_indices)
-        .then(data => {
-          const present_ids = data
-            .filter(datum => datum !== undefined)
-            .map(datum => datum!.id);
-          const missing_data = this.props.data_indices!.filter(
-            id => !present_ids.includes(id)
-          );
-          if (missing_data.length > 0) {
-            this.props.clearQueryIndex(missing_data);
-          }
-
-          let values = data
-            .filter(datum => datum !== undefined)
-            .reduce(
-              (result, datum) => result.concat(datum!.data.values),
-              [] as any[]
-            );
-
-          if ('timestamp' in values[0]) {
-            values = (values as Event[]).map(event =>
-              Object.values(eventTransforms).reduce(
-                (val, fn) => fn(val, this.props.report!),
-                event
-              )
-            );
-          } else {
-            values = values as TableEntry[];
-          }
-          this.setState({
-            loading: false,
-            data: {
-              name: 'data',
-              values
-            }
-          });
-        })
-        .catch(err => {
-          console.error(err);
-          this.setState({ loading: false });
-        });
-    }
-  }
-
-  componentDidMount() {
-    this._updateData();
-  }
-
-  componentDidUpdate(prevProps: QueryVizProps) {
-    if (!equal(this.props.data_indices, prevProps.data_indices)) {
-      this.setState({ data: null });
-      this._updateData();
-    }
-  }
-
-  flip() {
-    this.setState({ flipped: !this.state.flipped });
-  }
-
-  render() {
-    const { state, report } = this.props;
-    const { data } = this.state;
-    const spec = { ...defaultSpec, datasets: {}, ...state.spec, data };
-    spec.datasets = {
-      enemies: report ? report.enemies : [],
-      friendlies: report ? report.friendlies : [],
-      fights: report ? report.fights : [],
-      ...spec.datasets
-    };
-    console.log(spec);
-
-    if (this.state.flipped) {
-      return (
-        <div className="query-viz">
-          <QueryEditor flip={this.flip.bind(this)} state={state} />
-        </div>
-      );
-    } else {
-      return (
-        <div className="query-viz">
-          <QueryView
-            data={data}
-            spec={spec as VisualizationSpec}
-            loading={this.state.loading || this.props.external_load}
-            flip={this.flip.bind(this)}
-          />
-        </div>
-      );
-    }
-  }
-}
+*/
 
 function getDataIndices(
   state: AppState,
@@ -388,27 +274,103 @@ function getDataIndices(
   return null;
 }
 
-const mapState = (
-  state: AppState,
-  { code, guid }: { code: ReportCode | null; guid: Guid }
-) => {
-  const vizState = state.visualizations.get(guid)!;
-  return {
-    report: code ? state.reports.get(code)! : null,
-    state: vizState,
-    data_indices: getDataIndices(state, code, vizState.query),
-    external_load:
-      !!vizState.query &&
-      !!state.requests.queries.find(val =>
-        val.includes(queryKey(vizState.query!).toString())
+const QueryViz: React.FC<QueryVizProps> = props => {
+  const [flipped, setFlipped] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<QueryVizData | null>(null);
+  const dispatch = useDispatch();
+
+  const state = useSelector(
+    (state: AppState) => state.visualizations.get(props.guid)!
+  );
+  const report = useSelector((state: AppState) =>
+    props.code ? state.reports.get(props.code) : null
+  );
+  const data_indices = useSelector((appState: AppState) =>
+    getDataIndices(appState, props.code, state.query)
+  );
+  const external_load = useSelector(
+    (appState: AppState) =>
+      !!state.query &&
+      !!appState.requests.queries.find(val =>
+        val.includes(queryKey(state.query!).toString())
       )
+  );
+
+  useEffect(() => {
+    if (data_indices !== null) {
+      setLoading(true);
+      getDataById(data_indices)
+        .then(data => {
+          const present_ids = data
+            .filter(datum => datum !== undefined)
+            .map(datum => datum!.id);
+          const missing_data = data_indices!.filter(
+            id => !present_ids.includes(id)
+          );
+          if (missing_data.length > 0) {
+            dispatch(clearQueryIndex(missing_data));
+          }
+
+          let values = data
+            .filter(datum => datum !== undefined)
+            .reduce(
+              (result, datum) => result.concat(datum!.data.values),
+              [] as any[]
+            );
+
+          if ('timestamp' in values[0]) {
+            values = (values as Event[]).map(event =>
+              Object.values(eventTransforms).reduce(
+                (val, fn) => fn(val, report!),
+                event
+              )
+            );
+          } else {
+            values = values as TableEntry[];
+          }
+          setLoading(false);
+          setData({
+            name: 'data',
+            values
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          setLoading(false);
+        });
+    }
+  }, [report, data_indices, dispatch]);
+
+  const spec = { ...defaultSpec, datasets: {}, ...state.spec, data };
+  spec.datasets = {
+    enemies: report ? report.enemies : [],
+    friendlies: report ? report.friendlies : [],
+    fights: report ? report.fights : [],
+    ...spec.datasets
   };
+  console.log(spec);
+
+  const flip = useCallback(() => setFlipped(!flipped), [flipped]);
+
+  if (flipped) {
+    return (
+      <div className="query-viz">
+        <QueryEditor flip={flip} state={state} />
+      </div>
+    );
+  } else {
+    return (
+      <div className="query-viz">
+        <QueryView
+          data={data}
+          spec={spec as VisualizationSpec}
+          loading={loading || external_load}
+          flip={flip}
+        />
+      </div>
+    );
+  }
 };
 
-const mapDispatch = (dispatch: Dispatch) => {
-  return {
-    clearQueryIndex: (index: number[]) => dispatch(clearQueryIndex(index))
-  };
-};
-
-export default connect(mapState, mapDispatch)(QueryViz);
+export default QueryViz;
