@@ -417,9 +417,11 @@ export function updateQueries(
               }
             );
         })
-      ).then(() => dispatch({
-        type: MERGE_UPDATES
-      }));
+      ).then(() =>
+        dispatch({
+          type: MERGE_UPDATES
+        })
+      );
     });
   };
 }
