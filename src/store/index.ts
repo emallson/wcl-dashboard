@@ -124,7 +124,7 @@ function emptyReportState(code: ReportCode): ReportState {
   };
 }
 
-const CURRENT_VERSION = 5;
+const CURRENT_VERSION = 6;
 
 export const initialState: AppState = {
   version: CURRENT_VERSION,
@@ -135,7 +135,7 @@ export const initialState: AppState = {
     queries: Set()
   },
   visualizations: OrderedMap(),
-  sections: OrderedMap(),
+  sections: List(),
   pending_updates: List(),
   exporting: null,
   importing: false
@@ -775,6 +775,13 @@ const migrations = {
   5: (state: any) => {
     delete state.api_key;
     return state;
+  },
+  6: (state: any) => {
+    return {
+      ...state,
+      sections: List(),
+      visualizations: state.visualizations.map((viz: VizState) => ({ ...viz, section: null })),
+    };
   }
 };
 

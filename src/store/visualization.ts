@@ -1,12 +1,14 @@
 import { OrderedMap } from 'immutable';
 import { createQueryMeta, QueryMeta } from '../query';
 import { Guid, createGuid, DashboardAction } from './index';
+import { SectionId, DELETE_SECTION } from './section';
 
 export type VizState = {
   guid: Guid;
   spec: any;
   index: number;
   query: QueryMeta | null;
+  section: SectionId | null;
 };
 
 export type VizList = OrderedMap<Guid, VizState>;
@@ -104,10 +106,18 @@ export function duplicateViz(guid: Guid) {
   };
 }
 
+export const SET_VIZ_SECTION = Symbol('SET_VIZ_SECTION');
+interface SetVizSectionAction {
+  type: typeof SET_VIZ_SECTION;
+  guid: Guid;
+  section: SectionId | null;
+}
+
 export type VizAction =
   | CreateVizAction
   | SetVizSpecAction
   | SetVizQueryAction
+| SetVizSectionAction
   | DeleteVizAction
   | UpdateVizOrderAction
   | DuplicateVizAction;
@@ -147,14 +157,15 @@ export function reducer(
         guid,
         spec: {},
         query: null,
+        section: null,
         index: state.count()
       });
     case SET_VIZ_SPEC:
-      return state.update(action.guid, value => {
-        return { ...value, spec: action.spec };
-      });
+      return state.setIn([action.guid, 'spec'], action.spec);
     case SET_VIZ_QUERY:
-      return state.updateIn([action.guid, 'query'], () => action.query);
+      return state.setIn([action.guid, 'query'], action.query);
+    case SET_VIZ_SECTION:
+      return state.setIn([action.guid, 'section'], action.section);
     case DUPLICATE_VIZ:
       const viz = state.get(action.guid)!;
       const copy: VizState = JSON.parse(JSON.stringify(viz));
@@ -166,6 +177,8 @@ export function reducer(
         viz.index = index++;
         return viz;
       });
+    case DELETE_SECTION:
+      return state.map(viz => ({ ...viz, section: null }));
     default:
       return state;
   }

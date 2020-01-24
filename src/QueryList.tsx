@@ -1,45 +1,43 @@
 import React from 'react';
-import { Dispatch } from 'redux';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 
-import { ReportCode, Guid, AppState } from './store';
+import { AppState } from './store';
+import { SectionId } from './store/section';
 // import { updateVizOrder } from './store/visualization';
 import QueryViz from './QueryViz';
-import { SectionContainer } from './Section';
 
 type QueryListProps = {
-  code: ReportCode | null;
-  guids: Guid[];
+  section?: SectionId,
 };
 
-const QueryList: React.FC<QueryListProps> = ({ code, guids }) => {
+const QueryList: React.FC<QueryListProps> = ({ section: rawSection }) => {
+  const section = rawSection ? rawSection : null;
+  const guids = useSelector((state: AppState) => {
+    return state.visualizations.filter(viz => viz.section === section).keySeq().toArray();
+  });
+
+  const code = useSelector((state: AppState) => {
+    if(section) {
+      return state.sections.find(sec => sec.id === section)!.code || state.main_report;
+    } else {
+      return state.main_report;
+    }
+  });
+
   return (
-    <SectionContainer title="Unsorted" editable={false}>
-      <div className="query-container">
-        <div className="query-list">
-          {guids.map(guid => (
-            <QueryViz
-              // index={index}
-              key={guid.toString()}
-              guid={guid}
-              code={code}
-            />
-          ))}
-        </div>
+    <div className="query-container">
+      <div className="query-list">
+        {guids.map(guid => (
+          <QueryViz
+            // index={index}
+            key={guid.toString()}
+            guid={guid}
+            code={code}
+          />
+        ))}
       </div>
-    </SectionContainer>
+    </div>
   );
 };
 
-const mapState = (state: AppState) => {
-  return {
-    code: state.main_report,
-    guids: state.visualizations.keySeq().toArray()
-  };
-};
-
-const mapDispatch = (dispatch: Dispatch) => {
-  return {};
-};
-
-export default connect(mapState, mapDispatch)(QueryList);
+export default QueryList;

@@ -1,9 +1,9 @@
-import { OrderedMap, List } from 'immutable';
+import { List } from 'immutable';
 import { Newtype, prism } from 'newtype-ts';
 import { toNullable } from 'fp-ts/lib/Option';
 import { Guid as GuidCreator } from 'guid-typescript';
 
-import { DashboardAction, ReportCode, Guid as VizId } from './index';
+import { DashboardAction, ReportCode } from './index';
 
 export interface SectionId
   extends Newtype<{ readonly SectionId: unique symbol }, string> {}
@@ -11,8 +11,8 @@ export const SectionId = prism<SectionId>(GuidCreator.isGuid);
 export const createSectionId = () =>
   toNullable(SectionId.getOption(GuidCreator.create().toString()))!;
 
-export type SectionList = OrderedMap<SectionId, Section>;
-export const initialState: SectionList = OrderedMap();
+export type SectionList = List<Section>;
+export const initialState: SectionList = List();
 
 export type Section = {
   id: SectionId;
@@ -20,8 +20,6 @@ export type Section = {
   index: number;
   // if omitted, defaults to the main report code
   code: ReportCode | null;
-  // visualizations can be in multiple sections at once
-  contents: List<VizId>;
 };
 
 export const CREATE_SECTION = Symbol('CREATE_SECTION');
@@ -49,35 +47,10 @@ interface SetSectionTitleAction {
   title: string;
 }
 
-export const SECTION_ADD_VIZ = Symbol('SECTION_ADD_VIZ');
-interface SectionAddVizAction {
-  type: typeof SECTION_ADD_VIZ;
-  section: SectionId;
-  viz: VizId;
-  position?: number;
-}
-
-export const SECTION_REMOVE_VIZ = Symbol('SECTION_REMOVE_VIZ');
-interface SectionRemoveVizAction {
-  type: typeof SECTION_REMOVE_VIZ;
-  section: SectionId;
-  viz: VizId;
-}
-
 export const UPDATE_SECTION_ORDER = Symbol('UPDATE_SECTION_ORDER');
 interface UpdateSectionOrderAction {
   type: typeof UPDATE_SECTION_ORDER;
   id: SectionId;
-  oldIndex: number;
-  newIndex: number;
-}
-
-export const UPDATE_SECTION_VIZ_ORDER = Symbol('UPDATE_SECTION_VIZ_ORDER');
-interface UpdateSectionVizOrderAction {
-  type: typeof UPDATE_SECTION_VIZ_ORDER;
-  section: SectionId;
-  viz: VizId;
-  oldIndex: number;
   newIndex: number;
 }
 
@@ -86,10 +59,7 @@ export type SectionAction =
   | DeleteSectionAction
   | SetSectionCodeAction
   | SetSectionTitleAction
-  | SectionAddVizAction
-  | SectionRemoveVizAction
-  | UpdateSectionOrderAction
-  | UpdateSectionVizOrderAction;
+  | UpdateSectionOrderAction;
 
 export function reducer(
   state = initialState,
@@ -98,41 +68,27 @@ export function reducer(
   switch (action.type) {
     case CREATE_SECTION:
       const id = createSectionId();
-      return state.set(id, {
+      return state.push({
         id,
         code: null,
         index: state.count(),
         title: 'Untitled',
-        contents: List()
       });
     case DELETE_SECTION:
       let index = 0;
-      return state.remove(action.id).map(sec => {
-        sec.index = index++;
-        return sec;
-      });
-    case SECTION_ADD_VIZ:
-      return state.updateIn(
-        [action.section, 'contents'],
-        (list: List<VizId>) => {
-          if (list.contains(action.viz)) {
-            return list; // do nothing --- OrderedSet doesn't allow splicing
-          }
-          if (action.position) {
-            return list.insert(action.position, action.viz);
-          } else {
-            return list.push(action.viz);
-          }
-        }
-      );
-    case SECTION_REMOVE_VIZ:
-      return state.updateIn([action.section, 'contents'], list => {
-        return list.filter((guid: VizId) => guid !== action.viz);
-      });
+      return state.filter(sec => sec.id !== action.id).map(sec => ({ ...sec, index: index++ }));
     case SET_SECTION_CODE:
-      return state.setIn([action.id, 'code'], action.code);
+      return state.setIn([state.findIndex(sec => sec.id === action.id), 'code'], action.code);
     case SET_SECTION_TITLE:
-      return state.setIn([action.id, 'title'], action.title);
+      return state.setIn([state.findIndex(sec => sec.id === action.id), 'title'], action.title);
+    case UPDATE_SECTION_ORDER:
+      const oldIndex = state.findIndex(sec => sec.id === action.id);
+      console.log(action, state.toArray(), oldIndex);
+      if(oldIndex === -1) {
+        return state; // no section to move
+      }
+      const item = state.get(oldIndex)!;
+      return state.remove(oldIndex).insert(action.newIndex, item);
     default:
       return state;
   }

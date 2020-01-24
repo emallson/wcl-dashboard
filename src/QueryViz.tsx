@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Dispatch } from 'redux';
 import { useDispatch, useSelector } from 'react-redux';
 import { Event, TableEntry } from './query';
 import * as eventTransforms from './event_transforms';
+import { useDrag, useDrop } from 'react-dnd';
 
 import {
   queryKey,
@@ -25,8 +26,10 @@ import {
   duplicateViz,
   deleteViz,
   VizState,
-  setVizSpec
+  setVizSpec,
+  updateVizOrder
 } from './store/visualization';
+import { SectionId } from './store/section';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
 import QueryBuilder from './QueryBuilder';
 import 'brace';
@@ -39,6 +42,8 @@ import { notify_error } from './notify';
 
 import './QueryViz.scss';
 import './grip.css';
+
+export const VIZ_DRAG_TYPE = 'VIZ_DRAG_TYPE';
 
 type QueryVizProps = {
   guid: Guid;
@@ -73,8 +78,8 @@ const vega_options: EmbedOptions = {
   config: vega_config
 };
 
-const Handle = () => {
-  return <span className="grippy" style={{ marginRight: 8 }}></span>;
+export const Handle = ({ dragRef }: { dragRef: any }) => {
+  return <span ref={dragRef} className="grippy" style={{ marginRight: 8 }}></span>;
 };
 
 const view_msg_style = { margin: '2em' };
@@ -93,11 +98,12 @@ const defaultSpec = {
 };
 
 export const QueryView: React.FC<{
+  dragRef: any;
   data: any;
   spec: any;
   loading: boolean;
   flip: () => void;
-}> = ({ data, spec, loading, flip }) => {
+}> = ({ dragRef, data, spec, loading, flip }) => {
   const [renderError, setRenderError] = useState<any>(null);
 
   const vega = (
@@ -133,7 +139,7 @@ export const QueryView: React.FC<{
   return (
     <>
       <div className="menuBar">
-        <Handle />
+        <Handle dragRef={dragRef} />
         <span onClick={flip}>Configure</span>
       </div>
       <div style={{ textAlign: 'center' }}>
@@ -166,7 +172,8 @@ const safeSetSpec = (guid: Guid, spec: string, dispatch: Dispatch) => {
   }
 };
 
-export const QueryEditor: React.FC<{ flip: () => void; state: VizState }> = ({
+export const QueryEditor: React.FC<{ dragRef: any; flip: () => void; state: VizState }> = ({
+  dragRef,
   flip,
   state
 }) => {
@@ -179,7 +186,7 @@ export const QueryEditor: React.FC<{ flip: () => void; state: VizState }> = ({
   return (
     <>
       <div className="menuBar">
-        <Handle />
+        <Handle dragRef={dragRef} />
         <span
           onClick={() => {
             safeSetSpec(state.guid, specString, dispatch) && flip();
@@ -274,6 +281,13 @@ function getDataIndices(
   return null;
 }
 
+export interface DragItem {
+  type: typeof VIZ_DRAG_TYPE;
+  id: Guid;
+  originalSection: SectionId;
+  originalIndex: number;
+}
+
 const QueryViz: React.FC<QueryVizProps> = props => {
   const [flipped, setFlipped] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -353,16 +367,40 @@ const QueryViz: React.FC<QueryVizProps> = props => {
 
   const flip = useCallback(() => setFlipped(!flipped), [flipped]);
 
+  const [{ isDragging }, drag, preview] = useDrag({
+    item: { id: state.guid, type: VIZ_DRAG_TYPE, originalIndex: state.index, originalSection: state.section },
+    collect(monitor) {
+      return {
+        isDragging: monitor.isDragging()
+      }
+    }
+  });
+
+  const [, drop] = useDrop({
+    accept: VIZ_DRAG_TYPE,
+    drop(item: DragItem) {
+      dispatch(updateVizOrder(item.id, item.originalIndex, state.index));
+    }
+  })
+
+  const style = {
+    opacity: isDragging ? 0 : 1
+  };
+
+  const ref = useRef(null);
+  drop(preview(ref));
+
   if (flipped) {
     return (
-      <div className="query-viz">
-        <QueryEditor flip={flip} state={state} />
+      <div ref={ref} className="query-viz" style={style}>
+        <QueryEditor flip={flip} state={state} dragRef={drag} />
       </div>
     );
   } else {
     return (
-      <div className="query-viz">
+      <div ref={ref} className="query-viz" style={style}>
         <QueryView
+          dragRef={drag}
           data={data}
           spec={spec as VisualizationSpec}
           loading={loading || external_load}
