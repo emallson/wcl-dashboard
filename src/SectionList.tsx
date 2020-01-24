@@ -12,7 +12,7 @@ const SectionList = () => {
   return (
     <div className="section-container">
       <div className="section-list">
-        <SectionContainer title={"Unsorted"} editable={false} index={-1} >
+        <SectionContainer title={'Unsorted'} editable={false} index={-1}>
           <QueryList />
         </SectionContainer>
         {sections.map((sec, index) => (

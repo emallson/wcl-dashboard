@@ -79,7 +79,9 @@ const vega_options: EmbedOptions = {
 };
 
 export const Handle = ({ dragRef }: { dragRef: any }) => {
-  return <span ref={dragRef} className="grippy" style={{ marginRight: 8 }}></span>;
+  return (
+    <span ref={dragRef} className="grippy" style={{ marginRight: 8 }}></span>
+  );
 };
 
 const view_msg_style = { margin: '2em' };
@@ -172,11 +174,11 @@ const safeSetSpec = (guid: Guid, spec: string, dispatch: Dispatch) => {
   }
 };
 
-export const QueryEditor: React.FC<{ dragRef: any; flip: () => void; state: VizState }> = ({
-  dragRef,
-  flip,
-  state
-}) => {
+export const QueryEditor: React.FC<{
+  dragRef: any;
+  flip: () => void;
+  state: VizState;
+}> = ({ dragRef, flip, state }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [specString, setSpecString] = useState(
     JSON.stringify(state.spec, null, 2)
@@ -368,11 +370,16 @@ const QueryViz: React.FC<QueryVizProps> = props => {
   const flip = useCallback(() => setFlipped(!flipped), [flipped]);
 
   const [{ isDragging }, drag, preview] = useDrag({
-    item: { id: state.guid, type: VIZ_DRAG_TYPE, originalIndex: state.index, originalSection: state.section },
+    item: {
+      id: state.guid,
+      type: VIZ_DRAG_TYPE,
+      originalIndex: state.index,
+      originalSection: state.section
+    },
     collect(monitor) {
       return {
         isDragging: monitor.isDragging()
-      }
+      };
     }
   });
 
@@ -381,7 +388,7 @@ const QueryViz: React.FC<QueryVizProps> = props => {
     drop(item: DragItem) {
       dispatch(updateVizOrder(item.id, item.originalIndex, state.index));
     }
-  })
+  });
 
   const style = {
     opacity: isDragging ? 0 : 1

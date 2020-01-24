@@ -72,19 +72,27 @@ export function reducer(
         id,
         code: null,
         index: state.count(),
-        title: 'Untitled',
+        title: 'Untitled'
       });
     case DELETE_SECTION:
       let index = 0;
-      return state.filter(sec => sec.id !== action.id).map(sec => ({ ...sec, index: index++ }));
+      return state
+        .filter(sec => sec.id !== action.id)
+        .map(sec => ({ ...sec, index: index++ }));
     case SET_SECTION_CODE:
-      return state.setIn([state.findIndex(sec => sec.id === action.id), 'code'], action.code);
+      return state.setIn(
+        [state.findIndex(sec => sec.id === action.id), 'code'],
+        action.code
+      );
     case SET_SECTION_TITLE:
-      return state.setIn([state.findIndex(sec => sec.id === action.id), 'title'], action.title);
+      return state.setIn(
+        [state.findIndex(sec => sec.id === action.id), 'title'],
+        action.title
+      );
     case UPDATE_SECTION_ORDER:
       const oldIndex = state.findIndex(sec => sec.id === action.id);
       console.log(action, state.toArray(), oldIndex);
-      if(oldIndex === -1) {
+      if (oldIndex === -1) {
         return state; // no section to move
       }
       const item = state.get(oldIndex)!;

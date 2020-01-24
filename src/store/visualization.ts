@@ -117,7 +117,7 @@ export type VizAction =
   | CreateVizAction
   | SetVizSpecAction
   | SetVizQueryAction
-| SetVizSectionAction
+  | SetVizSectionAction
   | DeleteVizAction
   | UpdateVizOrderAction
   | DuplicateVizAction;

@@ -7,18 +7,24 @@ import { SectionId } from './store/section';
 import QueryViz from './QueryViz';
 
 type QueryListProps = {
-  section?: SectionId,
+  section?: SectionId;
 };
 
 const QueryList: React.FC<QueryListProps> = ({ section: rawSection }) => {
   const section = rawSection ? rawSection : null;
   const guids = useSelector((state: AppState) => {
-    return state.visualizations.filter(viz => viz.section === section).keySeq().toArray();
+    return state.visualizations
+      .filter(viz => viz.section === section)
+      .keySeq()
+      .toArray();
   });
 
   const code = useSelector((state: AppState) => {
-    if(section) {
-      return state.sections.find(sec => sec.id === section)!.code || state.main_report;
+    if (section) {
+      return (
+        state.sections.find(sec => sec.id === section)!.code ||
+        state.main_report
+      );
     } else {
       return state.main_report;
     }

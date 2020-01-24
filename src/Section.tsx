@@ -1,11 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Icon } from 'react-icons-kit';
-import { SectionId, SET_SECTION_TITLE, DELETE_SECTION, UPDATE_SECTION_ORDER } from './store/section';
+import {
+  SectionId,
+  SET_SECTION_TITLE,
+  DELETE_SECTION,
+  UPDATE_SECTION_ORDER
+} from './store/section';
 import { SET_VIZ_SECTION } from './store/visualization';
 import { AppState } from './store';
 import { DragItem as VizDragItem, VIZ_DRAG_TYPE } from './QueryViz';
-import  QueryList  from './QueryList';
+import QueryList from './QueryList';
 import { Handle } from './QueryViz';
 import { ic_navigate_next as collapsed_icon } from 'react-icons-kit/md/ic_navigate_next';
 import { ic_mode_edit as edit_icon } from 'react-icons-kit/md/ic_mode_edit';
@@ -45,7 +50,7 @@ export const SectionContainer = (props: {
       dispatch({
         type: SET_VIZ_SECTION,
         section: props.id ? props.id : null,
-        guid: item.id,
+        guid: item.id
       });
     }
   });
@@ -54,7 +59,7 @@ export const SectionContainer = (props: {
     item: { type: SEC_DRAG_TYPE, id: props.id },
     collect(monitor) {
       return {
-        isDragging: monitor.isDragging(),
+        isDragging: monitor.isDragging()
       };
     }
   });
@@ -68,7 +73,7 @@ export const SectionContainer = (props: {
       dispatch({
         type: UPDATE_SECTION_ORDER,
         id: item.id,
-        newIndex: props.index,
+        newIndex: props.index
       });
     }
   });
@@ -131,11 +136,15 @@ export const SectionContainer = (props: {
   );
 
   const style = {
-    opacity: isDragging ? 0 : 1,
+    opacity: isDragging ? 0 : 1
   };
 
   return (
-    <div ref={ref} className={`section ${collapsed ? 'collapsed' : ''}`} style={style}>
+    <div
+      ref={ref}
+      className={`section ${collapsed ? 'collapsed' : ''}`}
+      style={style}
+    >
       <div className="section-head">
         <Handle dragRef={drag} />
         <div
@@ -152,12 +161,14 @@ export const SectionContainer = (props: {
   );
 };
 
-const Section = ({ guid, index }: { guid: SectionId, index: number }) => {
-  const section = useSelector((state: AppState) => state.sections.find(sec => sec.id === guid)!);
+const Section = ({ guid, index }: { guid: SectionId; index: number }) => {
+  const section = useSelector(
+    (state: AppState) => state.sections.find(sec => sec.id === guid)!
+  );
 
   const views = <QueryList section={guid} />;
   return (
-    <SectionContainer id={guid} title={section.title} index={index} >
+    <SectionContainer id={guid} title={section.title} index={index}>
       {views}
     </SectionContainer>
   );

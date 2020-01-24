@@ -780,7 +780,10 @@ const migrations = {
     return {
       ...state,
       sections: List(),
-      visualizations: state.visualizations.map((viz: VizState) => ({ ...viz, section: null })),
+      visualizations: state.visualizations.map((viz: VizState) => ({
+        ...viz,
+        section: null
+      }))
     };
   }
 };
