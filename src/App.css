@@ -3,7 +3,6 @@
 }
 
 .query-list {
-    margin-top: 2em;
     display: flex;
     width: 100%;
     flex-wrap: wrap;

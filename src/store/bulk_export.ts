@@ -27,7 +27,9 @@ export function reducer(
       .toArray()
       .join('\n');
     saveAs(
-      new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8' }),
+      new Blob([tsv], {
+        type: 'text/tab-separated-values;charset=utf-8'
+      }),
       'visualizations.tsv'
     );
   }

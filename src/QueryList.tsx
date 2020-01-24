@@ -1,24 +1,41 @@
 import React from 'react';
-import { Dispatch } from 'redux';
-import { connect } from 'react-redux';
+import { useSelector } from 'react-redux';
 
-import { ReportCode, Guid, AppState } from './store';
-import { updateVizOrder } from './store/visualization';
+import { AppState } from './store';
+import { SectionId } from './store/section';
+// import { updateVizOrder } from './store/visualization';
 import QueryViz from './QueryViz';
-import { SortableContainer } from 'react-sortable-hoc';
 
 type QueryListProps = {
-  code: ReportCode | null;
-  guids: Guid[];
+  section?: SectionId;
 };
 
-const Queries: React.FC<QueryListProps> = ({ code, guids }) => {
+const QueryList: React.FC<QueryListProps> = ({ section: rawSection }) => {
+  const section = rawSection ? rawSection : null;
+  const guids = useSelector((state: AppState) => {
+    return state.visualizations
+      .filter(viz => viz.section === section)
+      .keySeq()
+      .toArray();
+  });
+
+  const code = useSelector((state: AppState) => {
+    if (section) {
+      return (
+        state.sections.find(sec => sec.id === section)!.code ||
+        state.main_report
+      );
+    } else {
+      return state.main_report;
+    }
+  });
+
   return (
     <div className="query-container">
       <div className="query-list">
-        {guids.map((guid, index) => (
+        {guids.map(guid => (
           <QueryViz
-            index={index}
+            // index={index}
             key={guid.toString()}
             guid={guid}
             code={code}
@@ -29,35 +46,4 @@ const Queries: React.FC<QueryListProps> = ({ code, guids }) => {
   );
 };
 
-const SortableQueryList = SortableContainer(Queries);
-
-const mapState = (state: AppState) => {
-  return {
-    code: state.main_report,
-    guids: state.visualizations.keySeq().toArray()
-  };
-};
-
-const mapDispatch = (dispatch: Dispatch) => {
-  return {
-    updateOrder: (guid: Guid, oldIndex: number, newIndex: number) =>
-      dispatch(updateVizOrder(guid, oldIndex, newIndex))
-  };
-};
-
-const QueryList: React.FC<QueryListProps & {
-  updateOrder: typeof updateVizOrder;
-}> = props => {
-  return (
-    <SortableQueryList
-      {...props}
-      axis="xy"
-      useDragHandle
-      onSortEnd={({ oldIndex, newIndex }) =>
-        props.updateOrder(props.guids[oldIndex], oldIndex, newIndex)
-      }
-    />
-  );
-};
-
-export default connect(mapState, mapDispatch)(QueryList);
+export default QueryList;

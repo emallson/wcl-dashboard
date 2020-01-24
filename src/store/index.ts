@@ -31,6 +31,11 @@ import {
   VizState,
   VizAction
 } from './visualization';
+import {
+  reducer as sectionReducer,
+  SectionList,
+  SectionAction
+} from './section';
 import { reducer as bulkExportReducer, BulkExportAction } from './bulk_export';
 
 export interface ApiKey
@@ -78,6 +83,7 @@ export type AppState = {
     queries: Set<string>;
   };
   visualizations: VizList;
+  sections: SectionList;
   pending_updates: List<PendingUpdate>;
   exporting: Guid | null;
   importing: boolean;
@@ -118,7 +124,7 @@ function emptyReportState(code: ReportCode): ReportState {
   };
 }
 
-const CURRENT_VERSION = 5;
+const CURRENT_VERSION = 6;
 
 export const initialState: AppState = {
   version: CURRENT_VERSION,
@@ -129,6 +135,7 @@ export const initialState: AppState = {
     queries: Set()
   },
   visualizations: OrderedMap(),
+  sections: List(),
   pending_updates: List(),
   exporting: null,
   importing: false
@@ -410,10 +417,6 @@ export function updateQueries(
               }
             );
         })
-      ).then(() =>
-        dispatch({
-          type: MERGE_UPDATES
-        })
       );
     });
   };
@@ -482,7 +485,8 @@ export type DashboardAction =
   | QueryAction
   | ImportAction
   | ExportAction
-  | BulkExportAction;
+  | BulkExportAction
+  | SectionAction;
 
 const PURGE_CUTOFF_MS = 2.592e8;
 function purgeQueries(state: AppState): AppState {
@@ -694,6 +698,16 @@ function vizReducerWrapper(
   };
 }
 
+function sectionReducerWrapper(
+  state: AppState = initialState,
+  action: DashboardAction
+): AppState {
+  return {
+    ...state,
+    sections: sectionReducer(state.sections, action)
+  };
+}
+
 const bulkWrapper = (
   state: AppState = initialState,
   action: DashboardAction
@@ -708,6 +722,7 @@ export const rootReducer = reduceReducers(
   initialState,
   mainReducer,
   vizReducerWrapper,
+  sectionReducerWrapper,
   bulkWrapper
 );
 
@@ -760,6 +775,16 @@ const migrations = {
   5: (state: any) => {
     delete state.api_key;
     return state;
+  },
+  6: (state: any) => {
+    return {
+      ...state,
+      sections: List(),
+      visualizations: state.visualizations.map((viz: VizState) => ({
+        ...viz,
+        section: null
+      }))
+    };
   }
 };
 

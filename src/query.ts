@@ -135,7 +135,6 @@ export async function storeData(
   query: QueryMeta,
   data: QueryVizData
 ): Promise<number> {
-  console.log(report, fight, query, data, typeof data);
   return db.records.put({
     report: report.toString(),
     queryKey: queryKey(query).toString(),
