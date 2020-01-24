@@ -417,7 +417,9 @@ export function updateQueries(
               }
             );
         })
-      );
+      ).then(() => dispatch({
+        type: MERGE_UPDATES
+      }));
     });
   };
 }
