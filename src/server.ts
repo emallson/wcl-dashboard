@@ -8,7 +8,7 @@ import logger from 'koa-logger';
 import json from 'koa-json';
 import { config } from 'dotenv';
 
-import { toApiKey, ReportCode, FightMeta } from './store';
+import { toApiKey, ReportCode } from './store';
 import { QueryMeta } from './query';
 import { load_meta, load_query_data } from './request';
 

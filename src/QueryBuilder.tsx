@@ -172,11 +172,20 @@ export const QueryBuilder: React.FC<QueryBuilderProps> = ({
 };
 
 const mapState = (state: AppState, { guid }: { guid: Guid }) => {
-  return {
-    guid,
-    meta: state.visualizations.get(guid)!.query,
-    bosses: bossList(state.reports.valueSeq())
-  };
+  const viz = state.visualizations.get(guid);
+  if (viz) {
+    return {
+      guid,
+      meta: viz.query,
+      bosses: bossList(state.reports.valueSeq())
+    };
+  } else {
+    return {
+      guid,
+      meta: null,
+      bosses: bossList(state.reports.valueSeq())
+    };
+  }
 };
 const mapDispatch = (dispatch: Dispatch) => {
   return {

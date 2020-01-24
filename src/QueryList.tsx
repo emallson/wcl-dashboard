@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, shallowEqual } from 'react-redux';
 
 import { AppState } from './store';
 import { SectionId } from './store/section';
@@ -10,14 +10,13 @@ type QueryListProps = {
   section?: SectionId;
 };
 
-const QueryList: React.FC<QueryListProps> = ({ section: rawSection }) => {
-  const section = rawSection ? rawSection : null;
+const QueryList: React.FC<QueryListProps> = ({ section }) => {
   const guids = useSelector((state: AppState) => {
     return state.visualizations
-      .filter(viz => viz.section === section)
+      .filter(viz => viz.section === (section || null))
       .keySeq()
       .toArray();
-  });
+  }, shallowEqual);
 
   const code = useSelector((state: AppState) => {
     if (section) {
