@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
+import useDeepCompareEffect from 'use-deep-compare-effect';
 import { Dispatch } from 'redux';
 import { useDispatch, useSelector } from 'react-redux';
 import { Event, TableEntry } from './query';
@@ -313,7 +314,7 @@ const QueryViz: React.FC<QueryVizProps> = props => {
       )
   );
 
-  useEffect(() => {
+  useDeepCompareEffect(() => {
     if (data_indices !== null) {
       setLoading(true);
       getDataById(data_indices)
