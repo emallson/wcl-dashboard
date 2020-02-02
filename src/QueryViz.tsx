@@ -265,10 +265,10 @@ function getDataIndices(
   state: AppState,
   code: ReportCode | null,
   query: QueryMeta | null
-): number[] | null {
+): number[] {
   if (code && hasReportMeta(state, code) && query) {
     if (missingFights(query, code, state).length > 0) {
-      return null; // don't show anything if we are missing data
+      return []; // don't show anything if we are missing data
     }
     const relevant_fights = relevantFights(query, code, state);
     const indices = state.reports.getIn([code, 'queries', queryKey(query)]);
@@ -281,7 +281,7 @@ function getDataIndices(
         .toArray();
     }
   }
-  return null;
+  return [];
 }
 
 export interface DragItem {
@@ -315,7 +315,7 @@ const QueryViz: React.FC<QueryVizProps> = props => {
   );
 
   useDeepCompareEffect(() => {
-    if (data_indices !== null) {
+    if (data_indices.length > 0) {
       setLoading(true);
       getDataById(data_indices)
         .then(data => {
@@ -336,7 +336,7 @@ const QueryViz: React.FC<QueryVizProps> = props => {
               [] as any[]
             );
 
-          if ('timestamp' in values[0]) {
+          if (values.length > 0 && 'timestamp' in values[0]) {
             values = (values as Event[]).map(event =>
               Object.values(eventTransforms).reduce(
                 (val, fn) => fn(val, report!),
@@ -356,8 +356,10 @@ const QueryViz: React.FC<QueryVizProps> = props => {
           console.error(err);
           setLoading(false);
         });
+    } else {
+      setData(null);
     }
-  }, [report, data_indices, dispatch]);
+  }, [data_indices]);
 
   const spec = { ...defaultSpec, datasets: {}, ...state.spec, data };
   spec.datasets = {
