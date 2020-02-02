@@ -359,7 +359,8 @@ const QueryViz: React.FC<QueryVizProps> = props => {
     } else {
       setData(null);
     }
-  }, [data_indices]);
+    // report is omitted here because we don't want to rerender whenever a new (irrelevant) fight happens
+  }, [data_indices]); 
 
   const spec = { ...defaultSpec, datasets: {}, ...state.spec, data };
   spec.datasets = {

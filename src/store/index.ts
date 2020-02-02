@@ -126,20 +126,24 @@ function emptyReportState(code: ReportCode): ReportState {
 
 const CURRENT_VERSION = 6;
 
-export const initialState: AppState = {
-  version: CURRENT_VERSION,
-  main_report: null,
-  reports: Map(),
-  requests: {
-    meta: Set(),
-    queries: Set()
-  },
-  visualizations: OrderedMap(),
-  sections: List(),
-  pending_updates: List(),
-  exporting: null,
-  importing: false
-};
+export function createState(): AppState {
+  return {
+    version: CURRENT_VERSION,
+    main_report: null,
+    reports: Map(),
+    requests: {
+      meta: Set(),
+      queries: Set()
+    },
+    visualizations: OrderedMap(),
+    sections: List(),
+    pending_updates: List(),
+    exporting: null,
+    importing: false
+  };
+}
+
+export const initialState: AppState = createState();
 
 export function bossList(
   reports: Seq.Indexed<ReportState>
@@ -463,7 +467,7 @@ interface ImportVizAction {
 export function importViz(state: VizState) {
   return {
     type: IMPORT_VIZ,
-    state
+    state 
   };
 }
 
@@ -650,6 +654,10 @@ function mainReducer(state = initialState, action: DashboardAction): AppState {
         importing: false
       };
     case IMPORT_VIZ:
+      if(!('section' in action.state) || state.sections.find(sec => sec.id === action.state.section) === undefined) {
+        // if the section is missing or not defined, set it to null
+        action.state.section = null;
+      }
       return {
         ...state,
         visualizations: state.visualizations.set(
