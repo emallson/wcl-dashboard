@@ -467,7 +467,7 @@ interface ImportVizAction {
 export function importViz(state: VizState) {
   return {
     type: IMPORT_VIZ,
-    state 
+    state
   };
 }
 
@@ -654,7 +654,11 @@ function mainReducer(state = initialState, action: DashboardAction): AppState {
         importing: false
       };
     case IMPORT_VIZ:
-      if(!('section' in action.state) || state.sections.find(sec => sec.id === action.state.section) === undefined) {
+      if (
+        !('section' in action.state) ||
+        state.sections.find(sec => sec.id === action.state.section) ===
+          undefined
+      ) {
         // if the section is missing or not defined, set it to null
         action.state.section = null;
       }

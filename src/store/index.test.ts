@@ -42,7 +42,9 @@ describe('root store', () => {
 
       state = root.rootReducer(state, root.importViz(viz));
 
-      expect(state.visualizations.get(viz.guid)!.section).toEqual(state.sections.get(0)!.id);
+      expect(state.visualizations.get(viz.guid)!.section).toEqual(
+        state.sections.get(0)!.id
+      );
     });
   });
 });
