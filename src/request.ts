@@ -22,7 +22,8 @@ export async function load_meta(key: ApiKey, code: ReportCode) {
     BASE_URL +
     `/report/fights/${code}?` +
     queryString.stringify({
-      api_key: key
+      api_key: key,
+      translate: true,
     });
   const res = await fetch(url);
 
@@ -53,6 +54,7 @@ export async function load_query_data(
       api_key: key,
       start,
       end,
+      translate: true,
       filter: query.filter,
       ...(query.cutoff ? { cutoff: query.cutoff } : {})
     });
