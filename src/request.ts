@@ -23,7 +23,7 @@ export async function load_meta(key: ApiKey, code: ReportCode) {
     `/report/fights/${code}?` +
     queryString.stringify({
       api_key: key,
-      translate: true,
+      translate: true
     });
   const res = await fetch(url);
 
