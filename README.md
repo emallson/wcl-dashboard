@@ -39,7 +39,7 @@ produces this visualization of deaths over an entire log:
 
 # Contributing
 
-I am not currently accepting contributions. Check again later.
+Talk to me on Discord (`emallson#6223`) if you want to make a contribution. You can find me in the [Peak of Serenity](https://discord.gg/0dkfBMAxzTkWj21F) or send me a friend request.
 
 If you want to run a local copy, you need to set the `API_KEY` environment
 variable to your API key (or put it in a `.env` file as `API_KEY=whatever`).
