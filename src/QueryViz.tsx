@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { Icon } from 'react-icons-kit';
+import { ic_navigate_next as collapsed_icon } from 'react-icons-kit/md/ic_navigate_next';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import { Dispatch } from 'redux';
 import { useDispatch, useSelector } from 'react-redux';
@@ -28,13 +30,15 @@ import {
   deleteViz,
   VizState,
   setVizSpec,
-  updateVizOrder
+  updateVizOrder,
+  setVizPrescript,
 } from './store/visualization';
 import { SectionId } from './store/section';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
 import QueryBuilder from './QueryBuilder';
 import 'brace';
 import 'brace/mode/json';
+import 'brace/mode/javascript';
 import 'brace/theme/solarized_light';
 import AceEditor from 'react-ace';
 import GridLoader from 'react-spinners/GridLoader';
@@ -186,6 +190,10 @@ export const QueryEditor: React.FC<{
   );
   const dispatch = useDispatch();
 
+  const [scriptVisible, setScriptVisible] = useState(false);
+
+  const [prescript, setPrescript] = useState(state.prescript);
+
   return (
     <>
       <div className="menuBar">
@@ -223,6 +231,25 @@ export const QueryEditor: React.FC<{
         </div>
       </div>
       <QueryBuilder guid={state.guid} />
+      <div>
+        <legend
+          className={scriptVisible ? '': 'collapsed'}
+          onClick={() => setScriptVisible(!scriptVisible)}>
+          <Icon className="section-toggle" size={20} icon={collapsed_icon} />
+          Data Processing Script
+        </legend>
+        {scriptVisible &&
+         <AceEditor
+           value={prescript}
+           onChange={setPrescript}
+           height='200px'
+           tabSize={2}
+           theme="solarized_light"
+           mode="javascript"
+         />}
+      </div>
+
+      <legend>Visualization Spec</legend>
       <AceEditor
         value={specString}
         onChange={setSpecString}
@@ -234,32 +261,15 @@ export const QueryEditor: React.FC<{
         type="button"
         value="Update"
         onClick={() => {
+          if(prescript !== undefined) {
+            dispatch(setVizPrescript(state.guid, prescript));
+          }
           safeSetSpec(state.guid, specString, dispatch);
         }}
       />
     </>
   );
 };
-
-/*
-  shouldComponentUpdate(nextProps: QueryVizProps, nextState: QueryVizState) {
-    if (!equal(nextProps, this.props)) {
-      return true;
-    } else if (
-      (nextState.data === null || this.state.data === null) &&
-      !equal(nextState, this.state)
-    ) {
-      return true;
-    } else if (nextState.data !== null && this.state.data !== null) {
-      return (
-        queryDataChanged(nextState.data, this.state.data) ||
-        !equal({ ...nextState, data: null }, { ...this.state, data: null })
-      );
-    }
-
-    return !equal({ ...nextState, data: null }, { ...this.state, data: null });
-  }
-*/
 
 function getDataIndices(
   state: AppState,

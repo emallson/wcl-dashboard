@@ -7,6 +7,7 @@ export type VizState = {
   guid: Guid;
   spec: any;
   index: number;
+  prescript?: string;
   query: QueryMeta | null;
   section: SectionId | null;
 };
@@ -38,6 +39,21 @@ export function setVizSpec(guid: Guid, spec: object) {
     type: SET_VIZ_SPEC,
     guid,
     spec
+  };
+}
+
+export const SET_VIZ_PRESCRIPT = Symbol('SET_VIZ_PRESCRIPT');
+interface SetVizPrescriptAction {
+  type: typeof SET_VIZ_PRESCRIPT;
+  guid: Guid;
+  prescript: string;
+}
+
+export function setVizPrescript(guid: Guid, prescript: string) {
+  return {
+    type: SET_VIZ_PRESCRIPT,
+    guid,
+    prescript
   };
 }
 
@@ -116,6 +132,7 @@ interface SetVizSectionAction {
 export type VizAction =
   | CreateVizAction
   | SetVizSpecAction
+  | SetVizPrescriptAction
   | SetVizQueryAction
   | SetVizSectionAction
   | DeleteVizAction
@@ -162,6 +179,8 @@ export function reducer(
       });
     case SET_VIZ_SPEC:
       return state.setIn([action.guid, 'spec'], action.spec);
+    case SET_VIZ_PRESCRIPT:
+      return state.setIn([action.guid, 'prescript'], action.prescript);
     case SET_VIZ_QUERY:
       return state.setIn([action.guid, 'query'], action.query);
     case SET_VIZ_SECTION:
