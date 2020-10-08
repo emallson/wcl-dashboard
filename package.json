@@ -86,7 +86,7 @@
   },
   "scripts": {
     "start:app": "react-scripts start",
-    "start:server": "ts-node-dev --project ./tsconfig.dev.json --respawn --transpileOnly ./src/server.ts && wait-on tcp:5000",
+    "start:server": "ts-node-dev --poll --project ./tsconfig.dev.json --respawn --transpileOnly ./src/server.ts && wait-on tcp:5000",
     "start": "concurrently \"yarn start:app\" \"yarn start:server\"",
     "serve": "ts-node --project ./tsconfig.dev.json --transpile-only ./src/server.ts",
     "build": "react-scripts build",
