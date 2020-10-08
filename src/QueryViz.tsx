@@ -107,17 +107,19 @@ const defaultSpec = {
 export const QueryView: React.FC<{
   dragRef: any;
   data: any;
+  prescript?: string;
   spec: any;
   loading: boolean;
   flip: () => void;
-}> = ({ dragRef, data, spec, loading, flip }) => {
+}> = ({ dragRef, data, spec, prescript, loading, flip }) => {
   const [renderError, setRenderError] = useState<any>(null);
 
   const vega = (
     <Vega
       spec={{
         ...defaultSpec,
-        ...spec
+        ...spec,
+        data
       }}
       options={vega_options}
       renderError={setRenderError}
@@ -372,7 +374,7 @@ const QueryViz: React.FC<QueryVizProps> = props => {
     // report is omitted here because we don't want to rerender whenever a new (irrelevant) fight happens
   }, [data_indices]);
 
-  const spec = { ...defaultSpec, datasets: {}, ...state.spec, data };
+  const spec = { ...defaultSpec, datasets: {}, ...state.spec };
   spec.datasets = {
     enemies: report ? report.enemies : [],
     friendlies: report ? report.friendlies : [],
@@ -423,6 +425,7 @@ const QueryViz: React.FC<QueryVizProps> = props => {
         <QueryView
           dragRef={drag}
           data={data}
+          prescript={state.prescript}
           spec={spec as VisualizationSpec}
           loading={loading || external_load}
           flip={flip}
