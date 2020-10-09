@@ -1,7 +1,8 @@
 const {
     override,
     addBabelPlugin,
-    addWebpackPlugin
+    addWebpackPlugin,
+    addWebpackModuleRule,
 } = require("customize-cra");
 const path = require('path');
 const ReactRefreshPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
@@ -104,4 +105,10 @@ module.exports = override(
                     shouldInlineRuntimeChunk &&
                     addWebpackPlugin(new InlineChunkHtmlPlugin(HtmlWebpackPlugin, [/runtime~.+[.]js/])),
     addWebpackPlugin(new InterpolateHtmlPlugin(HtmlWebpackPlugin, environ.raw)),
+    addWebpackModuleRule({
+        test: /\.worker\.js$/,
+        use: [
+            { loader: 'worker-loader', options: { inline: 'fallback' } },
+        ],
+    }),
 );

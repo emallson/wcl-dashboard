@@ -1,22 +1,31 @@
-import * as forge from 'data-forge';
+import Worker from './runner.worker';
 
 window.addEventListener('message', (event: MessageEvent) => {
-    const { guid, script, data, spec} = event.data;
-    let result = null;
-    const render = (res: any) => { result = { ...data, values: res }};
+    const worker = new (Worker as any)();
 
-    let kind = 'success';
-    try {
-        // eslint-disable-next-line
-        Function('const [forge, data, spec, render] = arguments; ' + script)(forge, data.values, spec, render);
-    } catch (err) {
-        kind = 'error';
-        result = err.message;
-    }
+    const { guid } = event.data;
 
-    (event.source as Window).postMessage({
-        guid,
-        kind,
-        result,
-    }, "*");
+    const timeout = setTimeout(() => {
+        worker.terminate();
+
+        (event.source as Window).postMessage({
+            guid,
+            kind: 'error',
+            result: 'script time limit exceeded',
+        }, "*");
+    }, 5000);
+
+    worker.addEventListener('message', (response: MessageEvent) => {
+        const { kind, result } = response.data;
+        (event.source as Window).postMessage({
+            guid,
+            kind,
+            result,
+        }, "*");
+
+        worker.terminate();
+        clearTimeout(timeout);
+    });
+
+    worker.postMessage(event.data);
 });
