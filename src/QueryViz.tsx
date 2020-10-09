@@ -225,18 +225,23 @@ export const QueryEditor: React.FC<{
   );
   const dispatch = useDispatch();
 
-  const [scriptVisible, setScriptVisible] = useState(false);
+  const [scriptVisible, setScriptVisible] = useState(state.prescript !== undefined);
 
   const [prescript, setPrescript] = useState(state.prescript);
+
+  const save = () => {
+    if(prescript !== undefined) {
+      dispatch(setVizPrescript(state.guid, prescript));
+    }
+    return safeSetSpec(state.guid, specString, dispatch);
+  };
 
   return (
     <>
       <div className="menuBar">
         <Handle dragRef={dragRef} />
         <span
-          onClick={() => {
-            safeSetSpec(state.guid, specString, dispatch) && flip();
-          }}
+          onClick={() => (save() && flip())}
         >
           View
         </span>
@@ -295,12 +300,7 @@ export const QueryEditor: React.FC<{
       <input
         type="button"
         value="Update"
-        onClick={() => {
-          if(prescript !== undefined) {
-            dispatch(setVizPrescript(state.guid, prescript));
-          }
-          safeSetSpec(state.guid, specString, dispatch);
-        }}
+        onClick={save}
       />
     </>
   );
