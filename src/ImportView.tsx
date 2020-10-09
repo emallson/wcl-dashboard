@@ -74,12 +74,15 @@ class ImportView extends React.Component<ImportViewProps, ImportViewState> {
           }
         : {};
 
-    let gap = <br/>;
+    let gap = <br />;
 
     if (currentState && currentState.prescript !== undefined) {
       gap = (
         <div>
-          <div style={{color: 'red', marginBottom: '1em'}}>WARNING: This visualization includes the following script. Scripts can do VERY BAD THINGS. Be very careful before importing!</div>
+          <div style={{ color: 'red', marginBottom: '1em' }}>
+            WARNING: This visualization includes the following script. Scripts
+            can do VERY BAD THINGS. Be very careful before importing!
+          </div>
           <AceEditor
             value={currentState.prescript}
             theme="solarized_light"
@@ -105,7 +108,7 @@ class ImportView extends React.Component<ImportViewProps, ImportViewState> {
             onChange={e => this.validateText(e.target.value)}
             style={textboxStyle}
           />
-      {gap}
+          {gap}
           <button style={{ float: 'left' }} onClick={cancelImport}>
             Cancel
           </button>

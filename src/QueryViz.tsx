@@ -31,7 +31,7 @@ import {
   VizState,
   setVizSpec,
   updateVizOrder,
-  setVizPrescript,
+  setVizPrescript
 } from './store/visualization';
 import { SectionId } from './store/section';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
@@ -108,7 +108,7 @@ const defaultSpec = {
 export const QueryView: React.FC<{
   dragRef: any;
   data: any;
-  guid: Guid,
+  guid: Guid;
   prescript?: string;
   spec: any;
   loading: boolean;
@@ -119,14 +119,14 @@ export const QueryView: React.FC<{
   const [scriptRun, setScriptRun] = useState(false);
   const [processed, setProcessedData] = useState<any>(null);
 
-  if(data && !scriptRun) {
-    if(!prescript) {
+  if (data && !scriptRun) {
+    if (!prescript) {
       setScriptRun(true);
       setProcessedData(data);
     } else {
       runScript(guid, prescript, data, spec, (kind, result) => {
         setScriptRun(true);
-        if ( kind === 'success' ) {
+        if (kind === 'success') {
           setProcessedData(result);
         } else {
           setScriptError(result);
@@ -142,7 +142,7 @@ export const QueryView: React.FC<{
       spec={{
         ...defaultSpec,
         ...spec,
-        data: processed,
+        data: processed
       }}
       options={vega_options}
       renderError={setRenderError}
@@ -225,12 +225,14 @@ export const QueryEditor: React.FC<{
   );
   const dispatch = useDispatch();
 
-  const [scriptVisible, setScriptVisible] = useState(state.prescript !== undefined);
+  const [scriptVisible, setScriptVisible] = useState(
+    state.prescript !== undefined
+  );
 
   const [prescript, setPrescript] = useState(state.prescript);
 
   const save = () => {
-    if(prescript !== undefined) {
+    if (prescript !== undefined) {
       dispatch(setVizPrescript(state.guid, prescript));
     }
     return safeSetSpec(state.guid, specString, dispatch);
@@ -240,11 +242,7 @@ export const QueryEditor: React.FC<{
     <>
       <div className="menuBar">
         <Handle dragRef={dragRef} />
-        <span
-          onClick={() => (save() && flip())}
-        >
-          View
-        </span>
+        <span onClick={() => save() && flip()}>View</span>
         <div className="dropdown">
           <div onClick={() => setMenuVisible(!menuVisible)}>...</div>
           {menuVisible ? (
@@ -273,20 +271,22 @@ export const QueryEditor: React.FC<{
       <QueryBuilder guid={state.guid} />
       <div>
         <legend
-          className={scriptVisible ? '': 'collapsed'}
-          onClick={() => setScriptVisible(!scriptVisible)}>
+          className={scriptVisible ? '' : 'collapsed'}
+          onClick={() => setScriptVisible(!scriptVisible)}
+        >
           <Icon className="section-toggle" size={20} icon={collapsed_icon} />
           Data Processing Script
         </legend>
-        {scriptVisible &&
-         <AceEditor
-           value={prescript}
-           onChange={setPrescript}
-           height='200px'
-           tabSize={2}
-           theme="solarized_light"
-           mode="javascript"
-         />}
+        {scriptVisible && (
+          <AceEditor
+            value={prescript}
+            onChange={setPrescript}
+            height="200px"
+            tabSize={2}
+            theme="solarized_light"
+            mode="javascript"
+          />
+        )}
       </div>
 
       <legend>Visualization Spec</legend>
@@ -297,11 +297,7 @@ export const QueryEditor: React.FC<{
         theme="solarized_light"
         mode="json"
       />
-      <input
-        type="button"
-        value="Update"
-        onClick={save}
-      />
+      <input type="button" value="Update" onClick={save} />
     </>
   );
 };
