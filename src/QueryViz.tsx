@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
+import { Icon } from 'react-icons-kit';
+import { ic_navigate_next as collapsed_icon } from 'react-icons-kit/md/ic_navigate_next';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import { Dispatch } from 'redux';
 import { useDispatch, useSelector } from 'react-redux';
@@ -28,18 +30,21 @@ import {
   deleteViz,
   VizState,
   setVizSpec,
-  updateVizOrder
+  updateVizOrder,
+  setVizPrescript
 } from './store/visualization';
 import { SectionId } from './store/section';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
 import QueryBuilder from './QueryBuilder';
 import 'brace';
 import 'brace/mode/json';
+import 'brace/mode/javascript';
 import 'brace/theme/solarized_light';
 import AceEditor from 'react-ace';
 import GridLoader from 'react-spinners/GridLoader';
 // import equal from 'fast-deep-equal';
 import { notify_error } from './notify';
+import { runScript } from './sandbox';
 
 import './QueryViz.scss';
 import './grip.css';
@@ -103,17 +108,41 @@ const defaultSpec = {
 export const QueryView: React.FC<{
   dragRef: any;
   data: any;
+  guid: Guid;
+  prescript?: string;
   spec: any;
   loading: boolean;
   flip: () => void;
-}> = ({ dragRef, data, spec, loading, flip }) => {
+}> = ({ dragRef, data, spec, prescript, loading, flip, guid }) => {
   const [renderError, setRenderError] = useState<any>(null);
+  const [scriptError, setScriptError] = useState<any>(null);
+  const [scriptRun, setScriptRun] = useState(false);
+  const [processed, setProcessedData] = useState<any>(null);
+
+  if (data && !scriptRun) {
+    if (!prescript) {
+      setScriptRun(true);
+      setProcessedData(data);
+    } else {
+      runScript(guid, prescript, data, spec, (kind, result) => {
+        setScriptRun(true);
+        if (kind === 'success') {
+          setProcessedData(result);
+        } else {
+          setScriptError(result);
+        }
+      });
+    }
+  }
+
+  console.log(processed);
 
   const vega = (
     <Vega
       spec={{
         ...defaultSpec,
-        ...spec
+        ...spec,
+        data: processed
       }}
       options={vega_options}
       renderError={setRenderError}
@@ -129,12 +158,22 @@ export const QueryView: React.FC<{
         </span>
       </>
     );
+  } else if (scriptError) {
+    display = (
+      <>
+        <span style={view_msg_style}>
+          Unable to run pre-processing script: {scriptError}
+        </span>
+      </>
+    );
   } else if (loading) {
     display = <span style={view_msg_style}>Loading data...</span>;
   } else if (!data) {
     display = <span style={view_msg_style}>Missing Data</span>;
   } else if (data.values.length === 0) {
     display = <span style={view_msg_style}>No Relevant Data in Log</span>;
+  } else if (!scriptRun) {
+    display = <span style={view_msg_style}>Processing data...</span>;
   } else {
     display = vega;
   }
@@ -156,7 +195,7 @@ export const QueryView: React.FC<{
           <GridLoader
             css="margin: 1em auto;"
             color="#657b83"
-            loading={loading}
+            loading={loading || (data && !scriptRun)}
           />
         )}
         {display}
@@ -186,17 +225,24 @@ export const QueryEditor: React.FC<{
   );
   const dispatch = useDispatch();
 
+  const [scriptVisible, setScriptVisible] = useState(
+    state.prescript !== undefined
+  );
+
+  const [prescript, setPrescript] = useState(state.prescript);
+
+  const save = () => {
+    if (prescript !== undefined) {
+      dispatch(setVizPrescript(state.guid, prescript));
+    }
+    return safeSetSpec(state.guid, specString, dispatch);
+  };
+
   return (
     <>
       <div className="menuBar">
         <Handle dragRef={dragRef} />
-        <span
-          onClick={() => {
-            safeSetSpec(state.guid, specString, dispatch) && flip();
-          }}
-        >
-          View
-        </span>
+        <span onClick={() => save() && flip()}>View</span>
         <div className="dropdown">
           <div onClick={() => setMenuVisible(!menuVisible)}>...</div>
           {menuVisible ? (
@@ -223,6 +269,27 @@ export const QueryEditor: React.FC<{
         </div>
       </div>
       <QueryBuilder guid={state.guid} />
+      <div>
+        <legend
+          className={scriptVisible ? '' : 'collapsed'}
+          onClick={() => setScriptVisible(!scriptVisible)}
+        >
+          <Icon className="section-toggle" size={20} icon={collapsed_icon} />
+          Data Processing Script
+        </legend>
+        {scriptVisible && (
+          <AceEditor
+            value={prescript}
+            onChange={setPrescript}
+            height="200px"
+            tabSize={2}
+            theme="solarized_light"
+            mode="javascript"
+          />
+        )}
+      </div>
+
+      <legend>Visualization Spec</legend>
       <AceEditor
         value={specString}
         onChange={setSpecString}
@@ -230,36 +297,10 @@ export const QueryEditor: React.FC<{
         theme="solarized_light"
         mode="json"
       />
-      <input
-        type="button"
-        value="Update"
-        onClick={() => {
-          safeSetSpec(state.guid, specString, dispatch);
-        }}
-      />
+      <input type="button" value="Update" onClick={save} />
     </>
   );
 };
-
-/*
-  shouldComponentUpdate(nextProps: QueryVizProps, nextState: QueryVizState) {
-    if (!equal(nextProps, this.props)) {
-      return true;
-    } else if (
-      (nextState.data === null || this.state.data === null) &&
-      !equal(nextState, this.state)
-    ) {
-      return true;
-    } else if (nextState.data !== null && this.state.data !== null) {
-      return (
-        queryDataChanged(nextState.data, this.state.data) ||
-        !equal({ ...nextState, data: null }, { ...this.state, data: null })
-      );
-    }
-
-    return !equal({ ...nextState, data: null }, { ...this.state, data: null });
-  }
-*/
 
 function getDataIndices(
   state: AppState,
@@ -362,7 +403,7 @@ const QueryViz: React.FC<QueryVizProps> = props => {
     // report is omitted here because we don't want to rerender whenever a new (irrelevant) fight happens
   }, [data_indices]);
 
-  const spec = { ...defaultSpec, datasets: {}, ...state.spec, data };
+  const spec = { ...defaultSpec, datasets: {}, ...state.spec };
   spec.datasets = {
     enemies: report ? report.enemies : [],
     friendlies: report ? report.friendlies : [],
@@ -411,8 +452,10 @@ const QueryViz: React.FC<QueryVizProps> = props => {
     return (
       <div ref={ref} className="query-viz" style={style}>
         <QueryView
+          guid={state.guid}
           dragRef={drag}
           data={data}
+          prescript={state.prescript}
           spec={spec as VisualizationSpec}
           loading={loading || external_load}
           flip={flip}
