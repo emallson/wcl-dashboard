@@ -1,5 +1,6 @@
 import * as forge from 'data-forge';
 
+// eslint-disable-next-line
 addEventListener('message', event => {
   const { guid, script, data, spec } = event.data;
   let result = null;
