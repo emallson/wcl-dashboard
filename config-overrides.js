@@ -1,4 +1,11 @@
+const {
+    override,
+    addBabelPlugin,
+    addWebpackPlugin
+} = require("customize-cra");
 const path = require('path');
+const ReactRefreshPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
+
 const paths = require('react-scripts/config/paths');
 const getClientEnvironment = require('react-scripts/config/env');
 const resolve = require('resolve');
@@ -7,6 +14,10 @@ const InlineChunkHtmlPlugin = require('react-dev-utils/InlineChunkHtmlPlugin');
 const InterpolateHtmlPlugin = require('react-dev-utils/InterpolateHtmlPlugin');
 
 const shouldInlineRuntimeChunk = process.env.INLINE_RUNTIME_CHUNK !== 'false';
+
+const node_env = process.env.NODE_ENV;
+const isEnvProduction = node_env === 'production';
+const isEnvDevelopment = node_env === 'development';
 
 function build_page_plugin(env, template, filename, chunks) {
     const isEnvProduction = env === 'production';
@@ -39,53 +50,58 @@ function build_page_plugin(env, template, filename, chunks) {
     );
 }
 
-module.exports = {
-    webpack: function(config, env) {
-        const isEnvProduction = env === 'production';
-        const isEnvDevelopment = env === 'development';
+function rewriteEntries(config) {
+    return {
+        ...config,
+        entry: {
+            main: [
+                require.resolve('react-dev-utils/webpackHotDevClient'),
+                './src/index',
+            ],
+            worker: './src/worker'
+        }
+    };
+}
 
-        // Webpack uses `publicPath` to determine where the app is being served from.
-        // It requires a trailing slash, or the file assets will get an incorrect path.
-        // In development, we always serve from the root. This makes config easier.
-        const publicPath = isEnvProduction
-              ? paths.servedPath
-              : isEnvDevelopment && '/';
+function multiplexOutput(config) {
+    return {
+        ...config,
+        output: {
+            ...config.output,
+            filename: isEnvProduction
+                ? 'static/js/[name].[contenthash:8].js'
+                : isEnvDevelopment && 'static/js/[name].bundle.js',
+        }
+    };
+}
 
-        // `publicUrl` is just like `publicPath`, but we will provide it to our app
-        // as %PUBLIC_URL% in `index.html` and `process.env.PUBLIC_URL` in JavaScript.
-        // Omit trailing slash as %PUBLIC_URL%/xyz looks better than %PUBLIC_URL%xyz.
-        const publicUrl = isEnvProduction
-              ? publicPath.slice(0, -1)
-              : isEnvDevelopment && '';
-        // Get environment variables to inject into our app.
-        const environ = getClientEnvironment(publicUrl);
+// Webpack uses `publicPath` to determine where the app is being served from.
+// It requires a trailing slash, or the file assets will get an incorrect path.
+// In development, we always serve from the root. This makes config easier.
+const publicPath = isEnvProduction
+      ? paths.servedPath
+      : isEnvDevelopment && '/';
 
-        return {
-            ...config,
-            entry: {
-                main: [
-                    require.resolve('react-dev-utils/webpackHotDevClient'),
-                    './src/index',
-                ],
-                worker: './src/worker'
-            },
-            plugins: [
-                build_page_plugin(env, './public/index.html', 'index.html', ['main']),
-                build_page_plugin(env, './public/worker.html', 'worker.html', ['worker']),
+// `publicUrl` is just like `publicPath`, but we will provide it to our app
+// as %PUBLIC_URL% in `index.html` and `process.env.PUBLIC_URL` in JavaScript.
+// Omit trailing slash as %PUBLIC_URL%/xyz looks better than %PUBLIC_URL%xyz.
+const publicUrl = isEnvProduction
+      ? publicPath.slice(0, -1)
+      : isEnvDevelopment && '';
+// Get environment variables to inject into our app.
+const environ = getClientEnvironment(publicUrl);
+
+module.exports = override(
+    rewriteEntries,
+    addWebpackPlugin(build_page_plugin(node_env, './public/index.html', 'index.html', ['main'])),
+    addWebpackPlugin(build_page_plugin(node_env, './public/worker.html', 'worker.html', ['worker'])),
+    multiplexOutput,
+    isEnvDevelopment && addBabelPlugin(require.resolve('react-refresh/babel')),
+    isEnvDevelopment && addWebpackPlugin(new ReactRefreshPlugin()),
                 // Inlines the webpack runtime script. This script is too small to warrant
                 // a network request.
                 isEnvProduction &&
                     shouldInlineRuntimeChunk &&
-                    new InlineChunkHtmlPlugin(HtmlWebpackPlugin, [/runtime~.+[.]js/]),
-                new InterpolateHtmlPlugin(HtmlWebpackPlugin, environ.raw),
-                ...config.plugins.slice(3),
-            ].filter(Boolean),
-            output: {
-                ...config.output,
-                filename: isEnvProduction
-                    ? 'static/js/[name].[contenthash:8].js'
-                    : isEnvDevelopment && 'static/js/[name].bundle.js',
-            }
-        };
-    }
-}
+                    addWebpackPlugin(new InlineChunkHtmlPlugin(HtmlWebpackPlugin, [/runtime~.+[.]js/])),
+    addWebpackPlugin(new InterpolateHtmlPlugin(HtmlWebpackPlugin, environ.raw)),
+);
