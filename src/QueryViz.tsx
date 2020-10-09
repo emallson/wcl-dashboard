@@ -44,6 +44,7 @@ import AceEditor from 'react-ace';
 import GridLoader from 'react-spinners/GridLoader';
 // import equal from 'fast-deep-equal';
 import { notify_error } from './notify';
+import { runScript } from './sandbox';
 
 import './QueryViz.scss';
 import './grip.css';
@@ -107,19 +108,41 @@ const defaultSpec = {
 export const QueryView: React.FC<{
   dragRef: any;
   data: any;
+  guid: Guid,
   prescript?: string;
   spec: any;
   loading: boolean;
   flip: () => void;
-}> = ({ dragRef, data, spec, prescript, loading, flip }) => {
+}> = ({ dragRef, data, spec, prescript, loading, flip, guid }) => {
   const [renderError, setRenderError] = useState<any>(null);
+  const [scriptError, setScriptError] = useState<any>(null);
+  const [scriptRun, setScriptRun] = useState(false);
+  const [processed, setProcessedData] = useState<any>(null);
+
+  if(data && !scriptRun) {
+    if(!prescript) {
+      setScriptRun(true);
+      setProcessedData(data);
+    } else {
+      runScript(guid, prescript, data, spec, (kind, result) => {
+        setScriptRun(true);
+        if ( kind === 'success' ) {
+          setProcessedData(result);
+        } else {
+          setScriptError(result);
+        }
+      });
+    }
+  }
+
+  console.log(processed);
 
   const vega = (
     <Vega
       spec={{
         ...defaultSpec,
         ...spec,
-        data
+        data: processed,
       }}
       options={vega_options}
       renderError={setRenderError}
@@ -135,12 +158,22 @@ export const QueryView: React.FC<{
         </span>
       </>
     );
+  } else if (scriptError) {
+    display = (
+      <>
+        <span style={view_msg_style}>
+          Unable to run pre-processing script: {scriptError}
+        </span>
+      </>
+    );
   } else if (loading) {
     display = <span style={view_msg_style}>Loading data...</span>;
   } else if (!data) {
     display = <span style={view_msg_style}>Missing Data</span>;
   } else if (data.values.length === 0) {
     display = <span style={view_msg_style}>No Relevant Data in Log</span>;
+  } else if (!scriptRun) {
+    display = <span style={view_msg_style}>Processing data...</span>;
   } else {
     display = vega;
   }
@@ -162,7 +195,7 @@ export const QueryView: React.FC<{
           <GridLoader
             css="margin: 1em auto;"
             color="#657b83"
-            loading={loading}
+            loading={loading || !scriptRun}
           />
         )}
         {display}
@@ -423,6 +456,7 @@ const QueryViz: React.FC<QueryVizProps> = props => {
     return (
       <div ref={ref} className="query-viz" style={style}>
         <QueryView
+          guid={state.guid}
           dragRef={drag}
           data={data}
           prescript={state.prescript}
