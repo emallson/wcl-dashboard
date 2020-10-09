@@ -63,13 +63,15 @@ module.exports = {
         return {
             ...config,
             entry: {
-                hot: require.resolve('react-dev-utils/webpackHotDevClient'),
-                main: './src/index',
+                main: [
+                    require.resolve('react-dev-utils/webpackHotDevClient'),
+                    './src/index',
+                ],
                 worker: './src/worker'
             },
             plugins: [
-                build_page_plugin(env, './public/index.html', 'index.html', ['hot', 'main']),
-                build_page_plugin(env, './public/worker.html', 'worker.html', ['hot', 'worker']),
+                build_page_plugin(env, './public/index.html', 'index.html', ['main']),
+                build_page_plugin(env, './public/worker.html', 'worker.html', ['worker']),
                 // Inlines the webpack runtime script. This script is too small to warrant
                 // a network request.
                 isEnvProduction &&
