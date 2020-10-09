@@ -195,7 +195,7 @@ export const QueryView: React.FC<{
           <GridLoader
             css="margin: 1em auto;"
             color="#657b83"
-            loading={loading || !scriptRun}
+            loading={loading || (data && !scriptRun)}
           />
         )}
         {display}

@@ -17,15 +17,15 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 10;
+    max-width: 38em;
 
     background-color: $base2;
 
-    button {
-        float: right;
+    > * {
         margin: 0.5em;
     }
 
-    textarea {
-        margin: 0.5em;
+    button {
+        float: right;
     }
 }

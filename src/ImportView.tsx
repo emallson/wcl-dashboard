@@ -2,6 +2,10 @@ import React from 'react';
 import { Dispatch } from 'redux';
 import { connect } from 'react-redux';
 import { decompressFromBase64 } from 'lz-string';
+import 'brace';
+import 'brace/mode/javascript';
+import 'brace/theme/solarized_light';
+import AceEditor from 'react-ace';
 
 import { AppState, importViz, isVizState, CANCEL_IMPORT } from './store';
 import { VizState } from './store/visualization';
@@ -70,6 +74,26 @@ class ImportView extends React.Component<ImportViewProps, ImportViewState> {
           }
         : {};
 
+    let gap = <br/>;
+
+    if (currentState && currentState.prescript !== undefined) {
+      gap = (
+        <div>
+          <div style={{color: 'red', marginBottom: '1em'}}>WARNING: This visualization includes the following script. Scripts can do VERY BAD THINGS. Be very careful before importing!</div>
+          <AceEditor
+            value={currentState.prescript}
+            theme="solarized_light"
+            tabSize={2}
+            readOnly={true}
+            highlightActiveLine={false}
+            height="200px"
+            width="100%"
+            mode="javascript"
+          />
+        </div>
+      );
+    }
+
     return (
       <>
         <div id="export-background-block" />
@@ -81,7 +105,7 @@ class ImportView extends React.Component<ImportViewProps, ImportViewState> {
             onChange={e => this.validateText(e.target.value)}
             style={textboxStyle}
           />
-          <br />
+      {gap}
           <button style={{ float: 'left' }} onClick={cancelImport}>
             Cancel
           </button>
