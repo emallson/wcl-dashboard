@@ -323,7 +323,7 @@ export const QueryEditor: React.FC<{
   );
 };
 
-function getDataIndices(
+export function getDataIndices(
   state: AppState,
   code: ReportCode | null,
   query: QueryMeta | null
@@ -334,13 +334,11 @@ function getDataIndices(
     }
     const relevant_fights = relevantFights(query, code, state);
     const indices = state.reports.getIn([code, 'queries', queryKey(query)]);
+
     if (indices) {
-      return indices
-        .filter((_: any, fid: string) =>
-          relevant_fights.includes(parseInt(fid))
-        )
-        .valueSeq()
-        .toArray();
+      return relevant_fights
+        .map(id => indices.get(id.toString()))
+        .filter(x => x !== undefined);
     }
   }
   return [];

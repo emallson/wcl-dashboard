@@ -113,7 +113,7 @@ export type ReportState = {
   title?: string;
 };
 
-function emptyReportState(code: ReportCode): ReportState {
+export function emptyReportState(code: ReportCode): ReportState {
   return {
     code,
     lastUsed: null,
