@@ -43,11 +43,7 @@ Array [
     </span>
     <br />
     <span
-      style={
-        Object {
-          "margin": "2em",
-        }
-      }
+      className="message"
     >
       Loading data...
     </span>
@@ -98,11 +94,7 @@ Array [
     </span>
     <br />
     <span
-      style={
-        Object {
-          "margin": "2em",
-        }
-      }
+      className="message"
     >
       No Relevant Data in Log
     </span>
@@ -153,11 +145,7 @@ Array [
     </span>
     <br />
     <span
-      style={
-        Object {
-          "margin": "2em",
-        }
-      }
+      className="message"
     >
       No Relevant Data in Log
     </span>
@@ -208,11 +196,7 @@ Array [
     </span>
     <br />
     <span
-      style={
-        Object {
-          "margin": "2em",
-        }
-      }
+      className="message"
     >
       Missing Data
     </span>
