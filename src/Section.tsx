@@ -12,6 +12,7 @@ import { AppState } from './store';
 import { DragItem as VizDragItem, VIZ_DRAG_TYPE } from './QueryViz';
 import QueryList from './QueryList';
 import { Handle } from './QueryViz';
+import PullLimiter from './PullLimiter';
 import { ic_navigate_next as collapsed_icon } from 'react-icons-kit/md/ic_navigate_next';
 import { ic_mode_edit as edit_icon } from 'react-icons-kit/md/ic_mode_edit';
 import { ic_delete_forever as delete_icon } from 'react-icons-kit/md/ic_delete_forever';
@@ -83,6 +84,7 @@ export const SectionContainer = (props: {
   const controls =
     props.editable !== false ? (
       <div className="section-control">
+        {props.id && <PullLimiter id={props.id!} />}
         {editing ? (
           <>
             <div
