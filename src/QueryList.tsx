@@ -32,11 +32,7 @@ const QueryList: React.FC<QueryListProps> = ({ section }) => {
     <div className="query-container">
       <div className="query-list">
         {guids.map(guid => (
-          <QueryViz
-            key={guid.toString()}
-            guid={guid}
-            code={code}
-          />
+          <QueryViz key={guid.toString()} guid={guid} code={code} />
         ))}
       </div>
     </div>

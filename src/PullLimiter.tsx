@@ -11,7 +11,11 @@ interface Props {
 }
 
 const PullLimiter = (props: Props) => {
-  const pulls = useSelector((state: AppState) => state.sections.find(sec => sec.id === props.id)!.pulls) || "all";
+  const pulls =
+    useSelector(
+      (state: AppState) =>
+        state.sections.find(sec => sec.id === props.id)!.pulls
+    ) || 'all';
   const dispatch = useDispatch();
 
   const change = (event: ChangeEvent) => {
@@ -26,15 +30,28 @@ const PullLimiter = (props: Props) => {
     dispatch({
       type: SET_SECTION_PULLS,
       id: props.id,
-      pulls: pulls,
+      pulls: pulls
     });
   };
 
   const name = `pull-limiter-${props.id.toString()}`;
 
-  const Option = ({ label, value }: { label: string, value: string | number }) => (
+  const Option = ({
+    label,
+    value
+  }: {
+    label: string;
+    value: string | number;
+  }) => (
     <>
-      <input type="radio" value={value} name={name} id={`${name}-${value}`} checked={value === pulls} onChange={change}></input>
+      <input
+        type="radio"
+        value={value}
+        name={name}
+        id={`${name}-${value}`}
+        checked={value === pulls}
+        onChange={change}
+      ></input>
       <label htmlFor={`${name}-${value}`}>{label}</label>
     </>
   );

@@ -10,7 +10,7 @@ const worker_registry: Map<string, WorkerState> = new Map();
 
 function cancelWorker(guid: Guid) {
   const state = worker_registry.get(guid.toString());
-  if(!state) {
+  if (!state) {
     return;
   }
 
@@ -30,7 +30,8 @@ function registerWorker(guid: Guid, worker: any, timeout: any) {
   console.assert(!worker_registry.has(guid.toString()));
 
   worker_registry.set(guid.toString(), {
-    worker, timeout
+    worker,
+    timeout
   });
 }
 

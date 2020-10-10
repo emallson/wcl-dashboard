@@ -122,12 +122,12 @@ export const QueryView: React.FC<{
 }> = ({ dragRef, data, spec, prescript, loading, flip, guid }) => {
   const [renderError, setRenderError] = useState<any>(null);
   const [script, setScriptState] = useState<ScriptState>({
-    run: false,
+    run: false
   });
 
   useEffect(() => {
     setScriptState({
-      run: false,
+      run: false
     });
   }, [data, prescript, loading]);
 
@@ -135,19 +135,19 @@ export const QueryView: React.FC<{
     if (!prescript) {
       setScriptState({
         run: true,
-        processed: data,
+        processed: data
       });
     } else {
       runScript(guid, prescript, data, spec, (kind, result) => {
         if (kind === 'success') {
           setScriptState({
             run: true,
-            processed: result,
+            processed: result
           });
         } else {
           setScriptState({
             run: true,
-            error: result,
+            error: result
           });
         }
       });
@@ -190,7 +190,11 @@ export const QueryView: React.FC<{
   } else if (data.values.length === 0) {
     display = <span className="message">No Relevant Data in Log</span>;
   } else if (!script.run) {
-    display = <span key="processing" className="message">Processing data...</span>;
+    display = (
+      <span key="processing" className="message">
+        Processing data...
+      </span>
+    );
   } else {
     display = vega;
   }
@@ -362,11 +366,12 @@ const QueryViz: React.FC<QueryVizProps> = props => {
     props.code ? state.reports.get(props.code) : null
   );
   const data_indices = useSelector((appState: AppState) => {
-    const pull_limit = state.section ? appState.sections.find(sec => sec.id === state.section)!.pulls : null;
+    const pull_limit = state.section
+      ? appState.sections.find(sec => sec.id === state.section)!.pulls
+      : null;
     const indices = getDataIndices(appState, props.code, state.query);
     return isNumber(pull_limit) ? indices.slice(-pull_limit) : indices;
   });
-
 
   const external_load = useSelector(
     (appState: AppState) =>
