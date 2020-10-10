@@ -19,7 +19,7 @@ import { ic_delete_forever as delete_icon } from 'react-icons-kit/md/ic_delete_f
 import { ic_done as done_icon } from 'react-icons-kit/md/ic_done';
 import { useDrag, useDrop } from 'react-dnd';
 
-import './Section.scss';
+import styles from './Section.module.scss';
 
 const SEC_DRAG_TYPE = 'SEC_DRAG_TYPE';
 
@@ -83,12 +83,11 @@ export const SectionContainer = (props: {
 
   const controls =
     props.editable !== false ? (
-      <div className="section-control">
-        {props.id && <PullLimiter id={props.id!} />}
+      <div className={styles['section-control']}>
         {editing ? (
           <>
             <div
-              className="hover"
+              className={styles.hover}
               style={{
                 display: 'inline-block',
                 marginRight: '1em'
@@ -105,7 +104,7 @@ export const SectionContainer = (props: {
             <Icon
               size={20}
               icon={done_icon}
-              className="hover"
+              className={styles.hover}
               onClick={() => {
                 setEditing(false);
                 dispatch({
@@ -120,7 +119,7 @@ export const SectionContainer = (props: {
           <Icon
             size={20}
             icon={edit_icon}
-            className="hover"
+            className={styles.hover}
             onClick={() => setEditing(true)}
           />
         )}
@@ -144,21 +143,22 @@ export const SectionContainer = (props: {
   return (
     <div
       ref={ref}
-      className={`section ${collapsed ? 'collapsed' : ''}`}
+      className={`section ${collapsed ? styles.collapsed : ''}`}
       style={style}
     >
-      <div className="section-head">
+      <div className={styles['section-head']}>
         <Handle dragRef={drag} />
         <div
-          className="section-toggle"
+          className={styles['section-toggle']}
           onClick={() => setCollapsed(!collapsed)}
         >
           <Icon size={20} icon={collapsed_icon} />
         </div>
         <span>{titleControl}</span>
         {controls}
+        {props.id && <PullLimiter id={props.id!} />}
       </div>
-      <div className="section-content">{collapsed ? null : props.children}</div>
+      <div className={styles['section-content']}>{collapsed ? null : props.children}</div>
     </div>
   );
 };
