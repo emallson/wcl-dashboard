@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Icon } from 'react-icons-kit';
 import { ic_navigate_next as collapsed_icon } from 'react-icons-kit/md/ic_navigate_next';
 import useDeepCompareEffect from 'use-deep-compare-effect';
@@ -48,6 +48,7 @@ import { runScript } from './sandbox';
 
 import './QueryViz.scss';
 import './grip.css';
+import { isNumber } from 'util';
 
 export const VIZ_DRAG_TYPE = 'VIZ_DRAG_TYPE';
 
@@ -90,7 +91,6 @@ export const Handle = ({ dragRef }: { dragRef: any }) => {
   );
 };
 
-const view_msg_style = { margin: '2em' };
 const title_style = {
   fontSize: '1.2em',
   fontWeight: 700,
@@ -105,6 +105,12 @@ const defaultSpec = {
   background: '#fdf6e3'
 };
 
+interface ScriptState {
+  error?: string;
+  processed?: any;
+  run: boolean;
+}
+
 export const QueryView: React.FC<{
   dragRef: any;
   data: any;
@@ -115,34 +121,45 @@ export const QueryView: React.FC<{
   flip: () => void;
 }> = ({ dragRef, data, spec, prescript, loading, flip, guid }) => {
   const [renderError, setRenderError] = useState<any>(null);
-  const [scriptError, setScriptError] = useState<any>(null);
-  const [scriptRun, setScriptRun] = useState(false);
-  const [processed, setProcessedData] = useState<any>(null);
+  const [script, setScriptState] = useState<ScriptState>({
+    run: false
+  });
 
-  if (data && !scriptRun) {
+  useEffect(() => {
+    setScriptState({
+      run: false
+    });
+  }, [data, prescript, loading]);
+
+  if (data && !script.run) {
     if (!prescript) {
-      setScriptRun(true);
-      setProcessedData(data);
+      setScriptState({
+        run: true,
+        processed: data
+      });
     } else {
       runScript(guid, prescript, data, spec, (kind, result) => {
-        setScriptRun(true);
         if (kind === 'success') {
-          setProcessedData(result);
+          setScriptState({
+            run: true,
+            processed: result
+          });
         } else {
-          setScriptError(result);
+          setScriptState({
+            run: true,
+            error: result
+          });
         }
       });
     }
   }
-
-  console.log(processed);
 
   const vega = (
     <Vega
       spec={{
         ...defaultSpec,
         ...spec,
-        data: processed
+        data: script.processed
       }}
       options={vega_options}
       renderError={setRenderError}
@@ -153,27 +170,31 @@ export const QueryView: React.FC<{
   if (renderError) {
     display = (
       <>
-        <span style={view_msg_style}>
+        <span className="message">
           Unable to render graphic: {renderError!.message}
         </span>
       </>
     );
-  } else if (scriptError) {
+  } else if (script.error) {
     display = (
       <>
-        <span style={view_msg_style}>
-          Unable to run pre-processing script: {scriptError}
+        <span className="message">
+          Unable to run pre-processing script: {script.error}
         </span>
       </>
     );
   } else if (loading) {
-    display = <span style={view_msg_style}>Loading data...</span>;
+    display = <span className="message">Loading data...</span>;
   } else if (!data) {
-    display = <span style={view_msg_style}>Missing Data</span>;
+    display = <span className="message">Missing Data</span>;
   } else if (data.values.length === 0) {
-    display = <span style={view_msg_style}>No Relevant Data in Log</span>;
-  } else if (!scriptRun) {
-    display = <span style={view_msg_style}>Processing data...</span>;
+    display = <span className="message">No Relevant Data in Log</span>;
+  } else if (!script.run) {
+    display = (
+      <span key="processing" className="message">
+        Processing data...
+      </span>
+    );
   } else {
     display = vega;
   }
@@ -195,7 +216,7 @@ export const QueryView: React.FC<{
           <GridLoader
             css="margin: 1em auto;"
             color="#657b83"
-            loading={loading || (data && !scriptRun)}
+            loading={loading || (data && !script.run)}
           />
         )}
         {display}
@@ -344,9 +365,14 @@ const QueryViz: React.FC<QueryVizProps> = props => {
   const report = useSelector((state: AppState) =>
     props.code ? state.reports.get(props.code) : null
   );
-  const data_indices = useSelector((appState: AppState) =>
-    getDataIndices(appState, props.code, state.query)
-  );
+  const data_indices = useSelector((appState: AppState) => {
+    const pull_limit = state.section
+      ? appState.sections.find(sec => sec.id === state.section)!.pulls
+      : null;
+    const indices = getDataIndices(appState, props.code, state.query);
+    return isNumber(pull_limit) ? indices.slice(-pull_limit) : indices;
+  });
+
   const external_load = useSelector(
     (appState: AppState) =>
       !!state.query &&

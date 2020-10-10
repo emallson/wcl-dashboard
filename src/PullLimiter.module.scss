@@ -1,0 +1,28 @@
+@import "solarized";
+
+@mixin checked {
+    background-color: $base02;
+    border: 1px solid $base01;
+}
+
+.pull-limiter {
+    float: right;
+    display: inline-block;
+    padding: 0.2em;
+    margin-right: 1em;
+    label {
+        margin-right: 0.3em;
+        padding: 0.2em;
+        border: 1px solid $base03;
+        &:hover {
+            @include checked;
+        }
+    }
+    input {
+        display: none;
+    }
+
+    input:checked + label {
+        @include checked;
+    }
+}

@@ -20,6 +20,7 @@ export type Section = {
   index: number;
   // if omitted, defaults to the main report code
   code: ReportCode | null;
+  pulls?: number | 'all';
 };
 
 export const CREATE_SECTION = Symbol('CREATE_SECTION');
@@ -54,12 +55,20 @@ interface UpdateSectionOrderAction {
   newIndex: number;
 }
 
+export const SET_SECTION_PULLS = Symbol('SET_SECTION_PULLS');
+interface SetSectionPullsAction {
+  type: typeof SET_SECTION_PULLS;
+  id: SectionId;
+  pulls: number | 'all';
+}
+
 export type SectionAction =
   | CreateSectionAction
   | DeleteSectionAction
   | SetSectionCodeAction
   | SetSectionTitleAction
-  | UpdateSectionOrderAction;
+  | UpdateSectionOrderAction
+  | SetSectionPullsAction;
 
 export function reducer(
   state = initialState,
@@ -97,6 +106,11 @@ export function reducer(
       }
       const item = state.get(oldIndex)!;
       return state.remove(oldIndex).insert(action.newIndex, item);
+    case SET_SECTION_PULLS:
+      return state.setIn(
+        [state.findIndex(sec => sec.id === action.id), 'pulls'],
+        action.pulls
+      );
     default:
       return state;
   }

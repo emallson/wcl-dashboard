@@ -3,7 +3,6 @@ import { useSelector, shallowEqual } from 'react-redux';
 
 import { AppState } from './store';
 import { SectionId } from './store/section';
-// import { updateVizOrder } from './store/visualization';
 import QueryViz from './QueryViz';
 
 type QueryListProps = {
@@ -33,12 +32,7 @@ const QueryList: React.FC<QueryListProps> = ({ section }) => {
     <div className="query-container">
       <div className="query-list">
         {guids.map(guid => (
-          <QueryViz
-            // index={index}
-            key={guid.toString()}
-            guid={guid}
-            code={code}
-          />
+          <QueryViz key={guid.toString()} guid={guid} code={code} />
         ))}
       </div>
     </div>
