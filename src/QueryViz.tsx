@@ -31,7 +31,8 @@ import {
   VizState,
   setVizSpec,
   updateVizOrder,
-  setVizPrescript
+  setVizPrescript,
+  hasPrescript
 } from './store/visualization';
 import { SectionId } from './store/section';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
@@ -132,13 +133,13 @@ export const QueryView: React.FC<{
   }, [data, prescript, loading]);
 
   if (data && !script.run) {
-    if (!prescript) {
+    if (!hasPrescript({ prescript } as VizState)) {
       setScriptState({
         run: true,
         processed: data
       });
     } else {
-      runScript(guid, prescript, data, spec, (kind, result) => {
+      runScript(guid, prescript!, data, spec, (kind, result) => {
         if (kind === 'success') {
           setScriptState({
             run: true,
@@ -246,9 +247,7 @@ export const QueryEditor: React.FC<{
   );
   const dispatch = useDispatch();
 
-  const [scriptVisible, setScriptVisible] = useState(
-    state.prescript !== undefined
-  );
+  const [scriptVisible, setScriptVisible] = useState(hasPrescript(state));
 
   const [prescript, setPrescript] = useState(state.prescript);
 
@@ -323,7 +322,7 @@ export const QueryEditor: React.FC<{
   );
 };
 
-function getDataIndices(
+export function getDataIndices(
   state: AppState,
   code: ReportCode | null,
   query: QueryMeta | null
@@ -334,13 +333,11 @@ function getDataIndices(
     }
     const relevant_fights = relevantFights(query, code, state);
     const indices = state.reports.getIn([code, 'queries', queryKey(query)]);
+
     if (indices) {
-      return indices
-        .filter((_: any, fid: string) =>
-          relevant_fights.includes(parseInt(fid))
-        )
-        .valueSeq()
-        .toArray();
+      return relevant_fights
+        .map(id => indices.get(id.toString()))
+        .filter(x => x !== undefined);
     }
   }
   return [];

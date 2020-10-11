@@ -156,7 +156,7 @@ export const SectionContainer = (props: {
         </div>
         <span>{titleControl}</span>
         {controls}
-        {props.id && <PullLimiter id={props.id!} />}
+        {!editing && props.id && <PullLimiter id={props.id!} />}
       </div>
       <div className={styles['section-content']}>
         {collapsed ? null : props.children}

@@ -177,6 +177,7 @@ export function relevantFights(
       ({ id }) =>
         !state.requests.queries.contains(updateQueryKey(report, query, id))
     )
+    .sort(({ start_time: a }, { start_time: b }) => a - b)
     .map(({ id }) => id);
   return relevant_fights;
 }
