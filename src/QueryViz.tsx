@@ -32,7 +32,7 @@ import {
   setVizSpec,
   updateVizOrder,
   setVizPrescript,
-  hasPrescript,
+  hasPrescript
 } from './store/visualization';
 import { SectionId } from './store/section';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';

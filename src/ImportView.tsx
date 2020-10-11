@@ -78,21 +78,25 @@ class ImportView extends React.Component<ImportViewProps, ImportViewState> {
     if (currentState && hasPrescript(currentState)) {
       gap = (
         <div>
-          <div className="warning" style={{ color: 'red', marginBottom: '1em' }}>
+          <div
+            className="warning"
+            style={{ color: 'red', marginBottom: '1em' }}
+          >
             WARNING: This visualization includes the following script. Scripts
             can do VERY BAD THINGS. Be very careful before importing!
           </div>
-          {process.env.JEST_WORKER_ID !== undefined ? null :
-           <AceEditor
-             value={currentState.prescript}
-             theme="solarized_light"
-             tabSize={2}
-             readOnly={true}
-             highlightActiveLine={false}
-             height="200px"
-             width="100%"
-             mode="javascript"
-           />}
+          {process.env.JEST_WORKER_ID !== undefined ? null : (
+            <AceEditor
+              value={currentState.prescript}
+              theme="solarized_light"
+              tabSize={2}
+              readOnly={true}
+              highlightActiveLine={false}
+              height="200px"
+              width="100%"
+              mode="javascript"
+            />
+          )}
         </div>
       );
     }
