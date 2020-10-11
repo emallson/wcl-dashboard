@@ -31,7 +31,8 @@ import {
   VizState,
   setVizSpec,
   updateVizOrder,
-  setVizPrescript
+  setVizPrescript,
+  hasPrescript,
 } from './store/visualization';
 import { SectionId } from './store/section';
 import Vega, { VisualizationSpec, EmbedOptions } from './vega';
@@ -132,13 +133,13 @@ export const QueryView: React.FC<{
   }, [data, prescript, loading]);
 
   if (data && !script.run) {
-    if (!prescript) {
+    if (!hasPrescript({ prescript } as VizState)) {
       setScriptState({
         run: true,
         processed: data
       });
     } else {
-      runScript(guid, prescript, data, spec, (kind, result) => {
+      runScript(guid, prescript!, data, spec, (kind, result) => {
         if (kind === 'success') {
           setScriptState({
             run: true,
@@ -246,9 +247,7 @@ export const QueryEditor: React.FC<{
   );
   const dispatch = useDispatch();
 
-  const [scriptVisible, setScriptVisible] = useState(
-    state.prescript !== undefined
-  );
+  const [scriptVisible, setScriptVisible] = useState(hasPrescript(state));
 
   const [prescript, setPrescript] = useState(state.prescript);
 

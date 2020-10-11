@@ -8,7 +8,7 @@ import 'brace/theme/solarized_light';
 import AceEditor from 'react-ace';
 
 import { AppState, importViz, isVizState, CANCEL_IMPORT } from './store';
-import { VizState } from './store/visualization';
+import { VizState, hasPrescript } from './store/visualization';
 
 import './ExportView.scss';
 
@@ -33,7 +33,6 @@ class ImportView extends React.Component<ImportViewProps, ImportViewState> {
   }
 
   validateText(text: string) {
-    console.log(text);
     if (text.length === 0) {
       // empty text
       this.setState({ currentState: null, validText: null });
@@ -76,23 +75,24 @@ class ImportView extends React.Component<ImportViewProps, ImportViewState> {
 
     let gap = <br />;
 
-    if (currentState && currentState.prescript !== undefined) {
+    if (currentState && hasPrescript(currentState)) {
       gap = (
         <div>
-          <div style={{ color: 'red', marginBottom: '1em' }}>
+          <div className="warning" style={{ color: 'red', marginBottom: '1em' }}>
             WARNING: This visualization includes the following script. Scripts
             can do VERY BAD THINGS. Be very careful before importing!
           </div>
-          <AceEditor
-            value={currentState.prescript}
-            theme="solarized_light"
-            tabSize={2}
-            readOnly={true}
-            highlightActiveLine={false}
-            height="200px"
-            width="100%"
-            mode="javascript"
-          />
+          {process.env.JEST_WORKER_ID !== undefined ? null :
+           <AceEditor
+             value={currentState.prescript}
+             theme="solarized_light"
+             tabSize={2}
+             readOnly={true}
+             highlightActiveLine={false}
+             height="200px"
+             width="100%"
+             mode="javascript"
+           />}
         </div>
       );
     }

@@ -49,6 +49,10 @@ interface SetVizPrescriptAction {
   prescript: string;
 }
 
+export function hasPrescript(state: VizState) {
+  return state.prescript !== undefined && !/^\s*$/.test(state.prescript);
+}
+
 export function setVizPrescript(guid: Guid, prescript: string) {
   return {
     type: SET_VIZ_PRESCRIPT,
