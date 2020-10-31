@@ -53,7 +53,7 @@ window.addEventListener('message', (event: MessageEvent) => {
       },
       '*'
     );
-  }, 15000);
+  }, 5000);
 
   worker.addEventListener('message', (response: MessageEvent) => {
     const { kind, result } = response.data;
