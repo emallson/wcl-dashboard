@@ -93,7 +93,7 @@ const publicUrl = isEnvProduction
 // Get environment variables to inject into our app.
 const environ = getClientEnvironment(publicUrl);
 
-const sandboxUrl = isEnvProduction ? 'https://wcld-sandbox.emallson.net' : environ.raw['PUBLIC_URL'];
+const sandboxUrl = isEnvProduction ? 'http://wcld-sandbox.emallson.net' : environ.raw['PUBLIC_URL'];
 
 environ.raw['SANDBOX_URL'] = sandboxUrl;
 
