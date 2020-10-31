@@ -55,10 +55,10 @@ function rewriteEntries(config) {
     return {
         ...config,
         entry: {
-            main: [
+            main: isEnvDevelopment ? [
                 require.resolve('react-dev-utils/webpackHotDevClient'),
                 './src/index',
-            ],
+            ] : [ './src/index' ],
             worker: './src/worker'
         }
     };
@@ -89,8 +89,13 @@ const publicPath = isEnvProduction
 const publicUrl = isEnvProduction
       ? publicPath.slice(0, -1)
       : isEnvDevelopment && '';
+
 // Get environment variables to inject into our app.
 const environ = getClientEnvironment(publicUrl);
+
+const sandboxUrl = isEnvProduction ? 'https://wcld-sandbox.emallson.net' : environ.raw['PUBLIC_URL'];
+
+environ.raw['SANDBOX_URL'] = sandboxUrl;
 
 module.exports = override(
     rewriteEntries,
@@ -108,7 +113,7 @@ module.exports = override(
     addWebpackModuleRule({
         test: /\.worker\.js$/,
         use: [
-            { loader: 'worker-loader', options: { inline: 'fallback' } },
+            { loader: 'worker-loader' },
         ],
     }),
 );

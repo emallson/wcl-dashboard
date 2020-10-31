@@ -34,10 +34,14 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
+
+    <!-- this iframe is used to run scripts. due to constraints on chrome, we
+    need sandbox to include allow-same-origin. In production, this gets set to a
+    unique domain that is ONLY used for the sandbox. -->
     <iframe style="width: 0; height: 0; border: 0; border: none;"
-            src="worker.html"
+            src="%SANDBOX_URL%/worker.html"
             referrerpolicy="no-referrer"
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin"
             id="worker-frame"></iframe>
   </body>
 </html>
