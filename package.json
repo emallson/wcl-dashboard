@@ -33,7 +33,7 @@
     "cross-fetch": "^3.0.4",
     "data-forge": "^1.8.11",
     "debounce": "^1.2.0",
-    "dexie": "^2.0.4",
+    "dexie": "^3.2.2",
     "dotenv": "^8.2.0",
     "fast-deep-equal": "^2.0.1",
     "file-saver": "^2.0.2",
